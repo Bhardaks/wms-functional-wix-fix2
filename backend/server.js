@@ -508,6 +508,32 @@ app.get('/api/debug/packages-count', async (req, res) => {
   }
 });
 
+// Debug orders count
+app.get('/api/debug/orders-count', async (req, res) => {
+  try {
+    const totalOrders = await get('SELECT COUNT(*) as count FROM orders');
+    const ordersByStatus = await all(`
+      SELECT status, COUNT(*) as count 
+      FROM orders 
+      GROUP BY status 
+      ORDER BY count DESC
+    `);
+    const recentOrders = await all(`
+      SELECT order_number, customer_name, status, created_at 
+      FROM orders 
+      ORDER BY created_at DESC 
+      LIMIT 10
+    `);
+    res.json({
+      total_orders: totalOrders.count,
+      orders_by_status: ordersByStatus,
+      recent_orders: recentOrders
+    });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
 // ---- Orders ----
 app.get('/api/orders', async (req, res) => {
   const rows = await all(`

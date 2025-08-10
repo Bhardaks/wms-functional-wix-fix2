@@ -95,12 +95,10 @@ async function *iterateOrders() {
   
   do {
     pageCount++;
-    // Tarih aralığı ile daha eski siparişleri çek
-    const fromDate = '2023-01-01T00:00:00.000Z'; // 1 Ocak 2023'ten başla
+    // Tüm siparişleri çek (tarih filtresi yok)
     const body = { 
       cursorPaging: { limit: 100, cursor },
       filter: { 
-        createdDate: { $gte: fromDate },
         status: { $ne: 'INITIALIZED' }
       },
       sort: [{ fieldName: 'createdDate', order: 'DESC' }]
@@ -126,8 +124,8 @@ async function *iterateOrders() {
     cursor = newCursor;
     
     // Güvenlik: Sonsuz döngü önleme
-    if (pageCount > 100) {
-      console.log('⚠️  100 sayfa limitine ulaşıldı, durduruldu');
+    if (pageCount > 200) {
+      console.log('⚠️  200 sayfa limitine ulaşıldı, durduruldu');
       break;
     }
     
