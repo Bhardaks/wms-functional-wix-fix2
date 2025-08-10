@@ -407,24 +407,51 @@ function getSelectedProducts() {
 
 // CSV export fonksiyonu
 function exportToCSV(products) {
-  const headers = ['SKU', 'Ad', 'Fiyat', 'Konum', 'Paket Sayısı', 'Son Güncelleme'];
+  const headers = [
+    'SKU', 
+    'Ad', 
+    'Fiyat', 
+    'Stok', 
+    'Konum', 
+    'Paket Sayısı',
+    'Paket Detayları',
+    'Son Güncelleme'
+  ];
+  
   const csvContent = [
     headers.join(','),
-    ...products.map(p => [
-      p.sku,
-      `"${p.name}"`,
-      p.price || 0,
-      (p.location_codes || []).join(';'),
-      (p.packages || []).length,
-      p.updated_at || p.created_at
-    ].join(','))
+    ...products.map(p => {
+      // Paket detaylarını formatted string olarak hazırla
+      const packageDetails = (p.packages || []).map(pkg => {
+        const parts = [];
+        if (pkg.package_name) parts.push(`Ad:${pkg.package_name}`);
+        if (pkg.barcode) parts.push(`Barkod:${pkg.barcode}`);
+        if (pkg.quantity) parts.push(`Adet:${pkg.quantity}`);
+        if (pkg.package_number) parts.push(`No:${pkg.package_number}`);
+        if (pkg.package_content) parts.push(`İçerik:${pkg.package_content}`);
+        if (pkg.weight_kg) parts.push(`Ağırlık:${pkg.weight_kg}kg`);
+        if (pkg.volume_m3) parts.push(`Hacim:${pkg.volume_m3}m³`);
+        return parts.join('|');
+      }).join('; ');
+      
+      return [
+        p.sku,
+        `"${p.name}"`,
+        p.price || 0,
+        p.inventory_quantity || 0,
+        (p.location_codes || []).join(';'),
+        (p.packages || []).length,
+        `"${packageDetails}"`,
+        p.updated_at || p.created_at
+      ].join(',');
+    })
   ].join('\n');
   
-  const blob = new Blob([csvContent], { type: 'text/csv' });
+  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8' });
   const url = window.URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  a.download = `urunler_${new Date().toISOString().split('T')[0]}.csv`;
+  a.download = `urunler_detayli_${new Date().toISOString().split('T')[0]}.csv`;
   a.click();
   window.URL.revokeObjectURL(url);
 }
