@@ -1,0 +1,226 @@
+
+<!doctype html>
+<html lang="tr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, maximum-scale=1.0" />
+  <title>WMS Dashboard</title>
+  <link rel="stylesheet" href="/assets/css/styles.css" />
+  <link rel="stylesheet" href="/assets/css/zebra-terminal.css" />
+</head>
+<body>
+<header>
+  <h1>WMS Dashboard</h1>
+  <nav>
+    <a href="/index.html">Ana Sayfa</a>
+    <a href="/products.html">Ürünler</a>
+    <a href="/orders.html">Siparişler</a>
+  </nav>
+  <div id="mobileNav" class="mobile-nav">
+    <button id="mobileNavToggle" class="mobile-nav-toggle">☰</button>
+    <div id="mobileNavMenu" class="mobile-nav-menu">
+      <a href="/index.html">Ana Sayfa</a>
+      <a href="/products.html">Ürünler</a>
+      <a href="/orders.html">Siparişler</a>
+      </div>
+  </div>
+</header>
+
+<main class="dashboard">
+  <!-- İstatistikler -->
+  <section class="stats-grid">
+    <div class="stat-card">
+      <h3>Toplam Ürün</h3>
+      <div class="stat-number" id="totalProducts">-</div>
+      <div class="stat-label">Adet</div>
+    </div>
+    <div class="stat-card">
+      <h3>Bekleyen Siparişler</h3>
+      <div class="stat-number" id="pendingOrders">-</div>
+      <div class="stat-label">Sipariş</div>
+    </div>
+    <div class="stat-card">
+      <h3>Aktif Toplamalar</h3>
+      <div class="stat-number" id="activePicks">-</div>
+      <div class="stat-label">Pick</div>
+    </div>
+    <div class="stat-card">
+      <h3>Sistem Durumu</h3>
+      <div class="stat-number" id="systemStatus">-</div>
+      <div class="stat-label">Status</div>
+    </div>
+  </section>
+
+  <!-- Hızlı İşlemler -->
+  <section class="card">
+    <h2>Hızlı İşlemler</h2>
+    <div class="quick-actions">
+      <button class="action-btn" onclick="location.href='/products.html'">
+        <span class="btn-icon">📦</span>
+        <span class="btn-text">Ürün Yönetimi</span>
+      </button>
+      <button class="action-btn" onclick="location.href='/orders.html'">
+        <span class="btn-icon">📋</span>
+        <span class="btn-text">Sipariş Yönetimi</span>
+      </button>
+      <button class="action-btn" id="syncAllBtn">
+        <span class="btn-icon">🔄</span>
+        <span class="btn-text">Wix Senkronizasyonu</span>
+      </button>
+    </div>
+  </section>
+
+  <!-- Son İşlemler -->
+  <section class="card">
+    <h2>Son İşlemler</h2>
+    <div class="recent-activities">
+      <div id="recentOrders" class="activity-section">
+        <h3>Son Siparişler</h3>
+        <div class="activity-list" id="recentOrdersList">Yükleniyor...</div>
+      </div>
+      <div id="recentPicks" class="activity-section">
+        <h3>Son Toplamalar</h3>
+        <div class="activity-list" id="recentPicksList">Yükleniyor...</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Sistem Bilgileri -->
+  <section class="card">
+    <h2>Sistem Bilgileri</h2>
+    <div class="system-info">
+      <button id="checkHealth" class="info-btn">Sunucu Durumunu Kontrol Et</button>
+      <pre id="healthOut" class="health-output"></pre>
+      <div class="sync-status">
+        <h4>Senkronizasyon Durumu</h4>
+        <div id="syncStatus" class="sync-info">
+          <div>Son Ürün Sync: <span id="lastProductSync">-</span></div>
+          <div>Son Sipariş Sync: <span id="lastOrderSync">-</span></div>
+        </div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<script type="module">
+const API = {
+  health: () => fetch('/api/health').then(r => r.json()),
+  products: () => fetch('/api/products').then(r => r.json()),
+  orders: () => fetch('/api/orders').then(r => r.json()),
+  syncWixAll: () => fetch('/api/sync/wix/all', {method: 'POST'}).then(r => r.json()),
+};
+
+// Dashboard verilerini yükle
+async function loadDashboard() {
+  try {
+    // İstatistikleri yükle
+    const [health, products, orders] = await Promise.all([
+      API.health(),
+      API.products(),
+      API.orders()
+    ]);
+
+    // Toplam ürün sayısı
+    document.getElementById('totalProducts').textContent = products.length;
+
+    // Bekleyen siparişler (open, approved durumunda olanlar)
+    const pendingCount = orders.filter(o => ['open', 'approved'].includes(o.status)).length;
+    document.getElementById('pendingOrders').textContent = pendingCount;
+
+    // Sistem durumu
+    document.getElementById('systemStatus').textContent = health.status === 'ok' ? '✅' : '❌';
+
+    // Aktif toplamalar (şimdilik 0 - picks API'si yoksa)
+    document.getElementById('activePicks').textContent = '0';
+
+    // Son siparişleri göster
+    const recentOrdersHtml = orders.slice(0, 5).map(order => `
+      <div class="activity-item">
+        <div class="activity-text">
+          <strong>${order.order_number}</strong> - ${order.customer_name || 'Anonim'}
+        </div>
+        <div class="activity-status status-${order.status}">${order.status}</div>
+      </div>
+    `).join('');
+    document.getElementById('recentOrdersList').innerHTML = recentOrdersHtml;
+
+    // Picks listesi (şimdilik boş)
+    document.getElementById('recentPicksList').innerHTML = '<div class="activity-item">Henüz toplama işlemi yok</div>';
+
+  } catch (error) {
+    console.error('Dashboard yükleme hatası:', error);
+    document.getElementById('totalProducts').textContent = 'Hata';
+    document.getElementById('pendingOrders').textContent = 'Hata';
+    document.getElementById('systemStatus').textContent = '❌';
+  }
+}
+
+// Sunucu durumu kontrolü
+document.getElementById('checkHealth').addEventListener('click', async () => {
+  try {
+    const health = await API.health();
+    document.getElementById('healthOut').textContent = JSON.stringify(health, null, 2);
+    document.getElementById('systemStatus').textContent = health.status === 'ok' ? '✅' : '❌';
+  } catch (error) {
+    document.getElementById('healthOut').textContent = 'Sunucu erişilemez: ' + error.message;
+    document.getElementById('systemStatus').textContent = '❌';
+  }
+});
+
+// Wix senkronizasyonu
+document.getElementById('syncAllBtn').addEventListener('click', async () => {
+  const btn = document.getElementById('syncAllBtn');
+  const originalText = btn.innerHTML;
+  
+  btn.innerHTML = '<span class="btn-icon">⏳</span><span class="btn-text">Senkronize Ediliyor...</span>';
+  btn.disabled = true;
+
+  try {
+    const result = await API.syncWixAll();
+    console.log('Sync result:', result);
+    
+    // Başarı mesajı
+    if (result.products?.ok && result.orders?.ok) {
+      alert(`Senkronizasyon başarılı!\nÜrünler: +${result.products.imported}\nSiparişler: +${result.orders.importedOrders}`);
+      
+      // Sync zamanlarını güncelle
+      const now = new Date().toLocaleString('tr-TR');
+      document.getElementById('lastProductSync').textContent = now;
+      document.getElementById('lastOrderSync').textContent = now;
+      
+      // Dashboard'u yenile
+      await loadDashboard();
+    } else {
+      alert('Senkronizasyonda sorun var. Detaylar için konsolu kontrol edin.');
+    }
+  } catch (error) {
+    alert('Senkronizasyon hatası: ' + error.message);
+  } finally {
+    btn.innerHTML = originalText;
+    btn.disabled = false;
+  }
+});
+
+// Mobile navigation toggle
+document.getElementById('mobileNavToggle').addEventListener('click', () => {
+  const menu = document.getElementById('mobileNavMenu');
+  menu.classList.toggle('show');
+});
+
+// Close mobile menu when clicking outside
+document.addEventListener('click', (e) => {
+  const nav = document.getElementById('mobileNav');
+  const menu = document.getElementById('mobileNavMenu');
+  if (!nav.contains(e.target)) {
+    menu.classList.remove('show');
+  }
+});
+
+// Sayfa yüklendiğinde dashboard'u yükle
+document.addEventListener('DOMContentLoaded', loadDashboard);
+
+// Her 30 saniyede bir otomatik yenile
+setInterval(loadDashboard, 30000);
+</script>
+</body>
+</html>

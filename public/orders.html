@@ -1,0 +1,533 @@
+<!doctype html>
+<html lang="tr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, maximum-scale=1.0" />
+  <title>Siparişler</title>
+  <link rel="stylesheet" href="/assets/css/styles.css" />
+  <link rel="stylesheet" href="/assets/css/zebra-terminal.css" />
+  <style>
+    .tabs {
+      display: flex;
+      border-bottom: 1px solid #ddd;
+    }
+    .tab-btn {
+      background: none;
+      border: none;
+      padding: 12px 20px;
+      cursor: pointer;
+      border-bottom: 2px solid transparent;
+      font-weight: 500;
+    }
+    .tab-btn:hover {
+      background-color: #f5f5f5;
+    }
+    .tab-btn.active {
+      border-bottom-color: #007bff;
+      color: #007bff;
+    }
+    .table-container {
+      overflow-x: auto;
+    }
+    
+    /* Mobile optimizations - remove horizontal scroll */
+    @media (max-width: 768px) {
+      .table-container {
+        overflow-x: visible;
+      }
+      
+      table {
+        display: block;
+        width: 100%;
+      }
+      
+      thead {
+        display: none;
+      }
+      
+      tbody {
+        display: block;
+        width: 100%;
+      }
+      
+      tr {
+        display: block;
+        margin-bottom: 16px;
+        background: var(--card);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        padding: 16px;
+      }
+      
+      td {
+        display: block;
+        border: none;
+        padding: 4px 0;
+        text-align: left !important;
+      }
+      
+      td:before {
+        content: attr(data-label) ": ";
+        font-weight: bold;
+        color: var(--accent);
+        display: inline-block;
+        min-width: 80px;
+      }
+      
+      /* Action buttons full width on mobile */
+      .action-btn {
+        width: 100%;
+        margin-top: 8px;
+        padding: 12px;
+        font-size: 14px;
+      }
+      
+      .order-items {
+        max-width: none;
+      }
+      
+      .tabs {
+        overflow-x: auto;
+        white-space: nowrap;
+      }
+      
+      .tab-btn {
+        min-width: 120px;
+        flex-shrink: 0;
+      }
+    }
+    .status-badge {
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-size: 12px;
+      font-weight: 500;
+      text-transform: uppercase;
+    }
+    .status-open { background: #e3f2fd; color: #1976d2; }
+    .status-approved { background: #fff3e0; color: #f57c00; }
+    .status-fulfilled { background: #e8f5e8; color: #4caf50; }
+    .status-cancelled { background: #ffebee; color: #f44336; }
+    .status-partially-fulfilled { background: #ffeaa7; color: #d63031; }
+    .order-items {
+      max-width: 250px;
+      font-size: 12px;
+      color: #666;
+    }
+    .order-date {
+      font-size: 12px;
+      color: #666;
+    }
+    .action-btn {
+      padding: 6px 12px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 12px;
+      margin-right: 4px;
+    }
+    .btn-pick {
+      background: #4caf50;
+      color: white;
+    }
+    .btn-pick:hover {
+      background: #45a049;
+    }
+    .btn-pick:disabled {
+      background: #ccc;
+      cursor: not-allowed;
+    }
+    .fulfillment-status {
+      font-size: 11px;
+      color: #666;
+      margin-top: 2px;
+    }
+  </style>
+</head>
+<body>
+<header>
+  <h1>Siparişler</h1>
+  <nav>
+    <a href="/index.html">Ana Sayfa</a>
+    <a href="/products.html">Ürünler</a>
+    <a href="/orders.html">Siparişler</a>
+    <a href="/pick.html">Toplama</a>
+  </nav>
+  <div id="mobileNav" class="mobile-nav">
+    <button id="mobileNavToggle" class="mobile-nav-toggle">☰</button>
+    <div id="mobileNavMenu" class="mobile-nav-menu">
+      <a href="/index.html">Ana Sayfa</a>
+      <a href="/products.html">Ürünler</a>
+      <a href="/orders.html">Siparişler</a>
+      <a href="/pick.html">Toplama</a>
+    </div>
+  </div>
+</header>
+
+<main class="grid" style="max-width:1200px;margin:auto;padding:16px">
+  <section class="card">
+    <div class="flex" style="justify-content:space-between;align-items:center;margin-bottom:16px">
+      <h2>Siparişler</h2>
+      <div class="flex" style="gap:8px">
+        <button id="syncWixOrders">Wix'ten Sipariş Çek</button>
+        <span class="badge" id="syncOrdersOut"></span>
+      </div>
+    </div>
+
+    <!-- Filtre ve Arama -->
+    <div class="flex" style="gap:12px;margin-bottom:16px;flex-wrap:wrap">
+      <input type="text" id="searchInput" placeholder="Sipariş no veya müşteri adı ara..." style="flex:1;min-width:200px;padding:8px;border:1px solid #ddd;border-radius:4px">
+      <select id="statusFilter" style="padding:8px;border:1px solid #ddd;border-radius:4px">
+        <option value="all">Tüm Durumlar</option>
+        <option value="open">Açık</option>
+        <option value="approved">Onaylanmış</option>
+        <option value="fulfilled">Tamamlanmış</option>
+        <option value="cancelled">İptal Edilmiş</option>
+      </select>
+    </div>
+
+    <!-- Sekmeler -->
+    <div class="tabs" style="margin-bottom:16px">
+      <button class="tab-btn active" data-tab="ongoing">Devam Eden Siparişler (<span id="ongoingCount">0</span>)</button>
+      <button class="tab-btn" data-tab="completed">Tamamlanan (<span id="completedCount">0</span>)</button>
+    </div>
+
+    <!-- Sipariş Tablosu -->
+    <div class="table-container">
+      <table id="ordTable">
+        <thead>
+          <tr>
+            <th>Sipariş No</th>
+            <th>Müşteri</th>
+            <th>Durum</th>
+            <th>Kalemler</th>
+            <th>Tarih</th>
+            <th>İşlem</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </section>
+</main>
+
+<script type="module">
+const $ = (s) => document.querySelector(s);
+const $$ = (s) => document.querySelectorAll(s);
+
+const API = {
+  listOrders: () => fetch('/api/orders').then(r => r.json()),
+  getOrder: (id) => fetch('/api/orders/' + id).then(r => r.json()),
+  createPick: (order_id) => fetch('/api/picks', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ order_id })
+  }).then(r => r.json()),
+  syncWixOrders: () => fetch('/api/sync/wix/orders', { method: 'POST' }).then(r => r.json()),
+};
+
+// Global state
+let allOrders = [];
+let currentTab = 'ongoing';
+let searchTerm = '';
+let statusFilter = 'all';
+
+// Müşteri adını temizleme fonksiyonu
+function cleanCustomerName(customerName) {
+  if (!customerName || customerName === '-') return 'Bilinmeyen Müşteri';
+  
+  const customerNameMapping = {
+    'a8dadd61-4a69-4204-b326-c04fe2bd5d2f': 'Global Meubles',
+    '123e4567-e89b-12d3-a456-426614174000': 'Trend Meubles', 
+    'f47ac10b-58cc-4372-a567-0e02b2c3d479': 'BRUXELLES MEUBLES',
+    'c3d4e5f6-1234-5678-9abc-def012345678': 'Dekor World',
+    '6ba7b810-9dad-11d1-80b4-00c04fd430c8': 'Home Design',
+    '550e8400-e29b-41d4-a716-446655440000': 'Interior Plus',
+    '12345678-1234-1234-1234-123456789012': 'Living Space',
+    '87654321-4321-4321-4321-210987654321': 'Modern Style',
+    'abcdef01-2345-6789-abcd-ef0123456789': 'Furniture World',
+    '11111111-2222-3333-4444-555555555555': 'Design Center'
+  };
+  
+  const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  if (uuidPattern.test(customerName)) {
+    const realName = customerNameMapping[customerName.toLowerCase()];
+    if (realName) return realName;
+    return 'Müşteri #' + customerName.substring(0, 8).toUpperCase();
+  }
+  
+  return customerName;
+}
+
+// Durum bazında siparişleri kategorize et - sadeleştirilmiş
+function categorizeOrder(order) {
+  console.log(`🔍 Categorizing Order ${order.order_number}:`, {
+    fulfillment_status: order.fulfillment_status,
+    status: order.status,
+    id: order.id
+  });
+  
+  // Tamamlanmış siparişler
+  if (order.fulfillment_status === 'FULFILLED' || order.status === 'fulfilled') {
+    console.log(`✅ Order ${order.order_number}: COMPLETED`);
+    return 'completed';
+  }
+  
+  // Diğer tüm siparişler (devam eden)
+  console.log(`📋 Order ${order.order_number}: ONGOING`);
+  return 'ongoing';
+}
+
+// Siparişleri yükle
+async function loadOrders() {
+  try {
+    const rows = await API.listOrders();
+    
+    // Tüm siparişlerin detaylarını yükle
+    allOrders = await Promise.all(rows.map(async o => {
+      const full = await API.getOrder(o.id);
+      return {
+        ...o,
+        items: full.items || [],
+        category: categorizeOrder(o),
+        created_date: new Date(o.created_at)
+      };
+    }));
+    
+    console.log('Loaded orders:', allOrders); // Debug
+    updateCounts();
+    filterAndDisplayOrders();
+  } catch (error) {
+    console.error('Error loading orders:', error);
+  }
+}
+
+// Sayaç güncellemeleri - devam eden ve tamamlanan
+function updateCounts() {
+  const ongoingCount = allOrders.filter(o => o.category === 'ongoing').length;
+  const completedCount = allOrders.filter(o => o.category === 'completed').length;
+  
+  $('#ongoingCount').textContent = ongoingCount;
+  $('#completedCount').textContent = completedCount;
+  
+  console.log('Counts:', { ongoingCount, completedCount }); // Debug
+}
+
+// Siparişleri filtrele ve göster - devam eden ve tamamlanan
+function filterAndDisplayOrders() {
+  let filteredOrders = allOrders;
+  
+  // Tab filtrelemesi
+  if (currentTab === 'ongoing') {
+    filteredOrders = filteredOrders.filter(o => o.category === 'ongoing');
+  } else if (currentTab === 'completed') {
+    filteredOrders = filteredOrders.filter(o => o.category === 'completed');
+  }
+  
+  console.log('After tab filter:', currentTab, filteredOrders.length); // Debug
+  
+  // Durum filtresi
+  if (statusFilter !== 'all') {
+    filteredOrders = filteredOrders.filter(o => o.status === statusFilter);
+    console.log('After status filter:', statusFilter, filteredOrders.length); // Debug
+  }
+  
+  // Arama filtresi
+  if (searchTerm.trim()) {
+    const term = searchTerm.toLowerCase().trim();
+    filteredOrders = filteredOrders.filter(o => 
+      o.order_number.toLowerCase().includes(term) ||
+      cleanCustomerName(o.customer_name).toLowerCase().includes(term)
+    );
+    console.log('After search filter:', searchTerm, filteredOrders.length); // Debug
+  }
+  
+  displayOrders(filteredOrders);
+}
+
+// Siparişleri tabloda göster
+function displayOrders(orders) {
+  const tbody = $('#ordTable tbody');
+  
+  if (orders.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:20px;color:#666">Sipariş bulunamadı</td></tr>';
+    return;
+  }
+  
+  tbody.innerHTML = orders.map(o => {
+    const items = o.items || [];
+    const count = items.length;
+    
+    const itemDetails = items.map(item => 
+      `• ${item.product_name} x${item.quantity}`
+    ).slice(0, 3).join('<br>') + (items.length > 3 ? '<br>...' : '');
+    
+    const displayCustomerName = cleanCustomerName(o.customer_name);
+    
+    // Durum class ve text belirleme
+    let statusClass, statusText;
+    
+    if (o.fulfillment_status === 'PARTIALLY_FULFILLED') {
+      statusClass = 'status-partially-fulfilled';
+      statusText = 'Kısmen Karşılandı';
+    } else if (o.fulfillment_status === 'FULFILLED') {
+      statusClass = 'status-fulfilled';
+      statusText = 'Tamamlanmış';
+    } else {
+      statusClass = `status-${o.status}`;
+      statusText = {
+        'open': 'Açık',
+        'approved': 'Onaylanmış',
+        'fulfilled': 'Tamamlanmış',
+        'cancelled': 'İptal Edilmiş'
+      }[o.status] || o.status;
+    }
+    
+    // Tarih formatlaması
+    const orderDate = o.created_date.toLocaleDateString('tr-TR', {
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit'
+    });
+    
+    // Pick butonu mantığı
+    let pickBtn;
+    
+    if (o.pick_status === 'partial') {
+      // Kısmi toplandı - devam et butonu
+      pickBtn = `<button class="action-btn btn-pick btn-partial" data-pick="${o.pick_id}" style="background:#ffc107;color:#000;">Toplaması Devam Et</button>`;
+    } else if (o.pick_status === 'active') {
+      // Aktif pick var - devam et
+      pickBtn = `<button class="action-btn btn-pick" data-pick="${o.pick_id}">Toplamaya Devam Et</button>`;
+    } else {
+      // Normal durum kontrolü
+      const canPick = (o.status === 'open' || o.status === 'approved') && 
+                     o.fulfillment_status !== 'FULFILLED' && 
+                     o.fulfillment_status !== 'PARTIALLY_FULFILLED' &&
+                     o.status !== 'fulfilled';
+      pickBtn = canPick ? 
+        `<button class="action-btn btn-pick" data-pick="${o.id}">Toplama Başlat</button>` : 
+        `<button class="action-btn btn-pick" disabled>Tamamlanmış</button>`;
+    }
+    
+    // Teslimat durumu bilgisini kaldırdık - artık gerekli değil
+    
+    return `<tr>
+      <td data-label="Sipariş No"><strong>#${o.order_number}</strong></td>
+      <td data-label="Müşteri">${displayCustomerName}</td>
+      <td data-label="Durum"><span class="status-badge ${statusClass}">${statusText}</span></td>
+      <td data-label="Kalemler"><div class="order-items">${count} kalem<br>${itemDetails || 'Kalem yok'}</div></td>
+      <td data-label="Tarih"><div class="order-date">${orderDate}</div></td>
+      <td data-label="İşlem">${pickBtn}</td>
+    </tr>`;
+  }).join('');
+}
+
+// Event listeners
+document.body.addEventListener('click', async (e) => {
+  // Wix sync
+  if (e.target && e.target.id === 'syncWixOrders') {
+    e.target.disabled = true;
+    e.target.textContent = 'Yükleniyor...';
+    
+    try {
+      const r = await API.syncWixOrders();
+      $('#syncOrdersOut').textContent = r.ok ? ('+' + r.importedOrders + ' sipariş') : (r.error || 'Hata');
+      await loadOrders();
+    } finally {
+      e.target.disabled = false;
+      e.target.textContent = "Wix'ten Sipariş Çek";
+    }
+  }
+  
+  // Sekme değiştirme
+  if (e.target.classList.contains('tab-btn')) {
+    $$('.tab-btn').forEach(btn => btn.classList.remove('active'));
+    e.target.classList.add('active');
+    currentTab = e.target.dataset.tab;
+    console.log('Tab changed to:', currentTab); // Debug
+    filterAndDisplayOrders();
+  }
+  
+  // Toplama başlatma
+  const pickValue = e.target.getAttribute('data-pick');
+  if (pickValue) {
+    e.target.disabled = true;
+    const originalText = e.target.textContent;
+    e.target.textContent = 'Yükleniyor...';
+    
+    try {
+      // Eğer buton partial ya da devam et butonuysa, direkt pick sayfasına git
+      if (e.target.classList.contains('btn-partial') || originalText.includes('Devam Et')) {
+        console.log('Existing pick devam:', pickValue);
+        location.href = '/pick.html?pick=' + pickValue;
+      } else {
+        // Yeni pick oluştur
+        const r = await API.createPick(parseInt(pickValue, 10));
+        if (r.error) { 
+          alert('Pick oluşturma hatası: ' + r.error); 
+        } else { 
+          console.log('Pick oluşturuldu:', r);
+          location.href = '/pick.html?pick=' + r.id; 
+        }
+      }
+    } finally {
+      e.target.disabled = false;
+      e.target.textContent = originalText;
+    }
+  }
+});
+
+// Arama input
+$('#searchInput').addEventListener('input', (e) => {
+  searchTerm = e.target.value;
+  console.log('Search term:', searchTerm); // Debug
+  filterAndDisplayOrders();
+});
+
+// Durum filtresi
+$('#statusFilter').addEventListener('change', (e) => {
+  statusFilter = e.target.value;
+  console.log('Status filter:', statusFilter); // Debug
+  filterAndDisplayOrders();
+});
+
+// Mobile navigation setup
+function setupMobileNav() {
+  const toggle = document.getElementById('mobileNavToggle');
+  const menu = document.getElementById('mobileNavMenu');
+  
+  if (toggle && menu) {
+    toggle.addEventListener('click', () => {
+      menu.classList.toggle('show');
+    });
+    
+    // Close mobile menu when clicking outside
+    document.addEventListener('click', (e) => {
+      const nav = document.getElementById('mobileNav');
+      if (nav && !nav.contains(e.target)) {
+        menu.classList.remove('show');
+      }
+    });
+  }
+}
+
+// Initialize mobile nav and load orders
+setupMobileNav();
+await loadOrders();
+
+// Otomatik yenileme - her 30 saniyede bir
+setInterval(() => {
+  console.log('🔄 Auto-refreshing orders...');
+  loadOrders();
+}, 30000);
+
+// Sayfa odaklandığında yenile
+document.addEventListener('visibilitychange', () => {
+  if (!document.hidden) {
+    console.log('👁️ Page became visible - refreshing orders');
+    loadOrders();
+  }
+});
+</script>
+</body>
+</html>
