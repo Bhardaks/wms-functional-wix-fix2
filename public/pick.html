@@ -647,6 +647,8 @@ function showPackageDetails(itemId) {
               </div>
               <div class="package-barcode">
                 <code>${pkg.barcode}</code>
+                ${pkg.package_number ? `<small>Paket No: ${pkg.package_number}</small>` : ''}
+                ${pkg.package_content ? `<small>İçerik: ${pkg.package_content}</small>` : ''}
               </div>
               <div class="package-count-info">
                 <div class="count-display">

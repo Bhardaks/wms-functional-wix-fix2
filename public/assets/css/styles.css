@@ -730,8 +730,8 @@ tr:hover { background: rgba(31,42,68,0.2); }
 
 .package-barcode {
   display: flex;
-  justify-content: space-between;
-  align-items: center;
+  flex-direction: column;
+  gap: 4px;
   margin-bottom: 12px;
   padding: 8px;
   background: rgba(0,0,0,0.2);
@@ -745,6 +745,14 @@ tr:hover { background: rgba(31,42,68,0.2); }
   border-radius: 4px;
   font-weight: bold;
   font-size: 12px;
+  margin-bottom: 4px;
+}
+
+.package-barcode small {
+  color: var(--muted);
+  font-size: 11px;
+  margin: 1px 0;
+  display: block;
 }
 
 .scan-btn {
