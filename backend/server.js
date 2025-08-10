@@ -359,17 +359,13 @@ app.post('/api/sync/wix/all', async (req, res) => {
         
         const status = (o.status || 'open').toLowerCase();
         
-        await run(`INSERT INTO orders (order_number, customer_name, status, total_amount, currency, order_date, wix_order_id)
-                   VALUES (?,?,?,?,?,?,?)
+        await run(`INSERT INTO orders (order_number, customer_name, status)
+                   VALUES (?,?,?)
                    ON CONFLICT(order_number) DO UPDATE SET
                      customer_name=excluded.customer_name,
                      status=excluded.status,
-                     total_amount=excluded.total_amount,
                      updated_at=CURRENT_TIMESTAMP`,
-                  [String(orderNumber), String(customerName), String(status), 
-                   o.priceSummary?.subtotal?.amount || 0, o.priceSummary?.subtotal?.currency || 'TRY',
-                   o.dateCreated ? new Date(o.dateCreated).toISOString() : new Date().toISOString(),
-                   String(o._id || o.id || '')]);
+                  [String(orderNumber), String(customerName), String(status)]);
         totalOrders++;
       }
       ordersResult = { ok: true, importedOrders: totalOrders };
