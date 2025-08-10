@@ -4,6 +4,7 @@ const axios = require('axios');
 const V3_PRODUCTS_QUERY = 'https://www.wixapis.com/stores/v3/products/query';
 const V1_PRODUCTS_QUERY = 'https://www.wixapis.com/stores/v1/products/query';
 const ECOM_ORDERS_SEARCH = 'https://www.wixapis.com/ecom/v1/orders/search';
+const STORES_V2_ORDERS_QUERY = 'https://www.wixapis.com/stores/v2/orders/query';
 
 function headers() {
   const key = process.env.WIX_API_KEY;
@@ -89,35 +90,47 @@ async function *iterateProducts() {
 
 // -------- ORDERS --------
 async function *iterateOrders() {
+  // eCommerce API ile cursor pagination (en güvenilir yöntem)
   let cursor = null;
-  let offset = 0;
   let pageCount = 0;
   let totalFetched = 0;
   
   do {
     pageCount++;
-    // Offset pagination ile tüm siparişleri çek
-    const body = { 
-      paging: { limit: 100, offset },
-      sort: [{ fieldName: 'createdDate', order: 'ASC' }] // Eskiden yeniye sıralama
-    };
+    
+    const body = cursor 
+      ? { 
+          cursorPaging: { limit: 100, cursor },
+          sort: [{ fieldName: 'createdDate', order: 'ASC' }]
+        }
+      : { 
+          cursorPaging: { limit: 100 },
+          sort: [{ fieldName: 'createdDate', order: 'ASC' }]
+        };
     
     const { data } = await axios.post(ECOM_ORDERS_SEARCH, body, { headers: headers() });
     const items = data?.orders || data?.items || [];
     
     totalFetched += items.length;
-    console.log(`📄 Wix API Sayfa ${pageCount}: ${items.length} sipariş alındı (Toplam: ${totalFetched})`);
+    console.log(`📄 Wix eCommerce API Sayfa ${pageCount}: ${items.length} sipariş alındı (Toplam: ${totalFetched})`);
+    
+    // Metadata'dan total ve hasNext bilgisini al
+    const metadata = data?.metadata || {};
+    if (pageCount === 1) {
+      console.log(`📊 Wix'te toplam ${metadata.total || 'bilinmeyen'} sipariş var (sadece ${items.length} erişilebilir)`);
+    }
     
     for (const it of items) yield it;
     
-    // Offset pagination logic
-    offset += items.length;
+    // Cursor'ı güncelle
+    cursor = metadata?.cursors?.next || null;
+    const hasNext = metadata?.hasNext || false;
     
-    console.log(`🔍 Page ${pageCount}: offset ${offset - items.length} -> ${offset}, items: ${items.length}`);
+    console.log(`🔍 Page ${pageCount}: ${items.length} sipariş, hasNext: ${hasNext}, cursor var: ${!!cursor}`);
     
-    // Eğer sayfa tam dolu değilse, daha fazla veri yok
-    if (items.length < 100) {
-      console.log('⚠️  Son sayfa (eksik veri), pagination tamamlandı');
+    // Daha fazla veri yoksa dur
+    if (!hasNext || !cursor || items.length === 0) {
+      console.log('⚠️  Son sayfa, pagination tamamlandı');
       break;
     }
     
@@ -127,9 +140,9 @@ async function *iterateOrders() {
       break;
     }
     
-  } while (true); // Offset pagination için sonsuz loop, break ile çıkış
+  } while (cursor);
   
-  console.log(`✅ Wix API tamamlandı: ${pageCount} sayfa, ${totalFetched} sipariş`);
+  console.log(`✅ Wix eCommerce API tamamlandı: ${pageCount} sayfa, ${totalFetched} sipariş`);
 }
 
 // Extract SKU from various places in line item (for orders)
