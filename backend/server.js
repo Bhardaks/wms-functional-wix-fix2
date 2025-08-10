@@ -132,8 +132,20 @@ app.post('/api/sync/wix/products', async (req, res) => {
     }
     res.json({ ok: true, imported: total, versionUsed });
   } catch (e) {
-    console.error('Wix sync products error:', e.response?.data || e.message);
-    res.status(500).json({ error: e.response?.data || e.message });
+    console.error('Wix sync products error:', {
+      message: e.message,
+      response: e.response?.data,
+      stack: e.stack,
+      config: e.config ? {
+        url: e.config.url,
+        method: e.config.method,
+        headers: e.config.headers
+      } : null
+    });
+    res.status(500).json({ 
+      error: e.response?.data || e.message,
+      details: process.env.NODE_ENV === 'development' ? e.stack : undefined
+    });
   }
 });
 // Pull orders from Wix into local DB – SKU/ID matching fixed
@@ -336,6 +348,16 @@ app.delete('/api/packages/:pkgId', async (req, res) => {
   } catch (e) {
     res.status(400).json({ error: e.message });
   }
+});
+
+// ---- Debug endpoint ----
+app.get('/api/debug/env', async (req, res) => {
+  res.json({
+    NODE_ENV: process.env.NODE_ENV || 'not set',
+    WIX_API_KEY: process.env.WIX_API_KEY ? 'SET (length: ' + process.env.WIX_API_KEY.length + ')' : 'NOT SET',
+    WIX_SITE_ID: process.env.WIX_SITE_ID ? 'SET (length: ' + process.env.WIX_SITE_ID.length + ')' : 'NOT SET',
+    PORT: process.env.PORT || 'not set'
+  });
 });
 
 // ---- Orders ----
