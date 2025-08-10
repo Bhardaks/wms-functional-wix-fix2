@@ -90,14 +90,15 @@ async function *iterateProducts() {
 // -------- ORDERS --------
 async function *iterateOrders() {
   let cursor = null;
+  let offset = 0;
   let pageCount = 0;
   let totalFetched = 0;
   
   do {
     pageCount++;
-    // Tüm siparişleri çek (hiç filtre yok)
+    // Offset pagination ile tüm siparişleri çek
     const body = { 
-      cursorPaging: { limit: 100, cursor },
+      paging: { limit: 100, offset },
       sort: [{ fieldName: 'createdDate', order: 'ASC' }] // Eskiden yeniye sıralama
     };
     
@@ -109,16 +110,16 @@ async function *iterateOrders() {
     
     for (const it of items) yield it;
     
-    // Wix API'de cursor metadata içinde!
-    const newCursor = data?.metadata?.cursors?.next || data?.nextCursor || null;
+    // Offset pagination logic
+    offset += items.length;
     
-    // Eğer cursor değişmediyse sonsuz döngü oluşur - durdur
-    if (newCursor && newCursor === cursor) {
-      console.log('⚠️  Cursor değişmedi, pagination tamamlandı');
+    console.log(`🔍 Page ${pageCount}: offset ${offset - items.length} -> ${offset}, items: ${items.length}`);
+    
+    // Eğer sayfa tam dolu değilse, daha fazla veri yok
+    if (items.length < 100) {
+      console.log('⚠️  Son sayfa (eksik veri), pagination tamamlandı');
       break;
     }
-    
-    cursor = newCursor;
     
     // Güvenlik: Sonsuz döngü önleme
     if (pageCount > 200) {
@@ -126,7 +127,7 @@ async function *iterateOrders() {
       break;
     }
     
-  } while (cursor);
+  } while (true); // Offset pagination için sonsuz loop, break ile çıkış
   
   console.log(`✅ Wix API tamamlandı: ${pageCount} sayfa, ${totalFetched} sipariş`);
 }
