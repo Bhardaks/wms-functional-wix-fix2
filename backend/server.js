@@ -105,8 +105,6 @@ app.post('/api/sync/wix/products', async (req, res) => {
                      ON CONFLICT(sku) DO UPDATE SET
                        name=excluded.name,
                        price=excluded.price,
-                       wix_product_id=excluded.wix_product_id,
-                       wix_variant_id=excluded.wix_variant_id,
                        inventory_quantity=excluded.inventory_quantity,
                        updated_at=CURRENT_TIMESTAMP`,
                     [String(vSku), String(fullName), null, null, vPrice, String(productId||''), String(v.id || v.variantId || ''), vInventoryQuantity]);
@@ -121,7 +119,6 @@ app.post('/api/sync/wix/products', async (req, res) => {
                      ON CONFLICT(sku) DO UPDATE SET
                        name=excluded.name,
                        price=excluded.price,
-                       wix_product_id=excluded.wix_product_id,
                        inventory_quantity=excluded.inventory_quantity,
                        updated_at=CURRENT_TIMESTAMP`,
                     [String(sku), String(baseName || 'Ürün'), null, null, price, String(productId||''), null, inventoryQuantity]);
@@ -311,10 +308,9 @@ app.post('/api/sync/wix/all', async (req, res) => {
                        ON CONFLICT(sku) DO UPDATE SET
                          name=excluded.name,
                          price=excluded.price,
-                         wix_product_id=excluded.wix_product_id,
-                         wix_variant_id=excluded.wix_variant_id,
                          inventory_quantity=excluded.inventory_quantity,
-                         updated_at=CURRENT_TIMESTAMP`,
+                         updated_at=CURRENT_TIMESTAMP
+                         -- NOT updating wix_product_id, wix_variant_id to preserve existing data`,
                       [String(vSku), String(fullName), null, null, vPrice, String(productId||''), String(v.id || v.variantId || ''), vInventoryQuantity]);
             total++;
           }
@@ -327,9 +323,9 @@ app.post('/api/sync/wix/all', async (req, res) => {
                        ON CONFLICT(sku) DO UPDATE SET
                          name=excluded.name,
                          price=excluded.price,
-                         wix_product_id=excluded.wix_product_id,
                          inventory_quantity=excluded.inventory_quantity,
-                         updated_at=CURRENT_TIMESTAMP`,
+                         updated_at=CURRENT_TIMESTAMP
+                         -- NOT updating wix_product_id to preserve existing data`,
                       [String(sku), String(baseName || 'Ürün'), null, null, price, String(productId||''), null, inventoryQuantity]);
             total++;
           }
@@ -488,6 +484,28 @@ app.get('/api/debug/env', async (req, res) => {
     WIX_SITE_ID: process.env.WIX_SITE_ID ? 'SET (length: ' + process.env.WIX_SITE_ID.length + ')' : 'NOT SET',
     PORT: process.env.PORT || 'not set'
   });
+});
+
+// Debug packages count before/after sync
+app.get('/api/debug/packages-count', async (req, res) => {
+  try {
+    const totalPackages = await get('SELECT COUNT(*) as count FROM product_packages');
+    const packagesPerProduct = await all(`
+      SELECT p.sku, p.name, COUNT(pp.id) as package_count 
+      FROM products p 
+      LEFT JOIN product_packages pp ON p.id = pp.product_id 
+      GROUP BY p.id, p.sku, p.name 
+      HAVING package_count > 0
+      ORDER BY package_count DESC
+      LIMIT 10
+    `);
+    res.json({
+      total_packages: totalPackages.count,
+      products_with_packages: packagesPerProduct
+    });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
 });
 
 // ---- Orders ----
