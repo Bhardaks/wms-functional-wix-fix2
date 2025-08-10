@@ -148,8 +148,10 @@ app.post('/api/sync/wix/products', async (req, res) => {
 app.post('/api/sync/wix/orders', async (req, res) => {
   try {
     let total = 0;
+    const uniqueOrderNumbers = new Set();
     for await (const o of wix.iterateOrders()) {
       const orderNumber = o.number || o.id;
+      uniqueOrderNumbers.add(orderNumber);
       
       
       // Müşteri adını farklı alanlardan bulmaya çalış
@@ -244,7 +246,8 @@ app.post('/api/sync/wix/orders', async (req, res) => {
       }
       total++;
     }
-    res.json({ ok: true, importedOrders: total });
+    console.log(`🔢 Unique orders from Wix: ${uniqueOrderNumbers.size}, Total processed: ${total}`);
+    res.json({ ok: true, importedOrders: total, uniqueOrders: uniqueOrderNumbers.size });
   } catch (e) {
     console.error('Wix sync orders error:', e.response?.data || e.message);
     res.status(500).json({ error: e.response?.data || e.message });
@@ -339,8 +342,10 @@ app.post('/api/sync/wix/all', async (req, res) => {
     // Orders sync - basit versiyon
     try {
       let totalOrders = 0;
+      const uniqueOrderNumbers = new Set();
       for await (const o of wix.iterateOrders()) {
         const orderNumber = o.number || o.id;
+        uniqueOrderNumbers.add(orderNumber);
         let customerName = '';
         
         const billingFirst = o.billingInfo?.contactDetails?.firstName || '';
@@ -364,7 +369,8 @@ app.post('/api/sync/wix/all', async (req, res) => {
                   [String(orderNumber), String(customerName), String(status)]);
         totalOrders++;
       }
-      ordersResult = { ok: true, importedOrders: totalOrders };
+      console.log(`🔢 Unique orders from Wix (all sync): ${uniqueOrderNumbers.size}, Total processed: ${totalOrders}`);
+      ordersResult = { ok: true, importedOrders: totalOrders, uniqueOrders: uniqueOrderNumbers.size };
     } catch (e) {
       ordersResult = { error: e.response?.data || e.message };
     }
