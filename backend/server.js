@@ -540,6 +540,39 @@ app.get('/api/debug/orders-count', async (req, res) => {
   }
 });
 
+// Debug Wix API raw response
+app.get('/api/debug/wix-orders-raw', async (req, res) => {
+  try {
+    console.log('🔍 Testing Wix orders API directly...');
+    
+    let totalFetched = 0;
+    let pageCount = 0;
+    let allOrders = [];
+    
+    for await (const order of wix.iterateOrders()) {
+      totalFetched++;
+      allOrders.push({
+        number: order.number || order.id,
+        status: order.status,
+        created: order.dateCreated || order.createdDate
+      });
+      
+      // Sadece ilk 100'ü göster, fazlası çok büyük olur
+      if (totalFetched >= 100) break;
+    }
+    
+    res.json({
+      message: `Wix API'den ${totalFetched} sipariş alındı`,
+      total_fetched: totalFetched,
+      sample_orders: allOrders.slice(0, 10),
+      all_orders_preview: allOrders
+    });
+  } catch (e) {
+    console.error('Wix debug error:', e);
+    res.status(500).json({ error: e.message, details: e.response?.data });
+  }
+});
+
 // ---- Orders ----
 app.get('/api/orders', async (req, res) => {
   const rows = await all(`

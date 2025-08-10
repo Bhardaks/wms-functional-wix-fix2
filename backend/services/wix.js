@@ -95,13 +95,10 @@ async function *iterateOrders() {
   
   do {
     pageCount++;
-    // Tüm siparişleri çek (tarih filtresi yok)
+    // Tüm siparişleri çek (hiç filtre yok)
     const body = { 
       cursorPaging: { limit: 100, cursor },
-      filter: { 
-        status: { $ne: 'INITIALIZED' }
-      },
-      sort: [{ fieldName: 'createdDate', order: 'DESC' }]
+      sort: [{ fieldName: 'createdDate', order: 'ASC' }] // Eskiden yeniye sıralama
     };
     
     const { data } = await axios.post(ECOM_ORDERS_SEARCH, body, { headers: headers() });
