@@ -256,10 +256,130 @@ app.post('/api/sync/wix/orders', async (req, res) => {
 // Pull both (products then orders)
 app.post('/api/sync/wix/all', async (req, res) => {
   try {
-    const r1 = await (await fetch('http://localhost:'+PORT+'/api/sync/wix/products', { method:'POST'})).json();
-    const r2 = await (await fetch('http://localhost:'+PORT+'/api/sync/wix/orders', { method:'POST'})).json();
-    res.json({ products: r1, orders: r2 });
+    // Direkt olarak sync fonksiyonlarını çağır, fetch kullanma
+    let productsResult, ordersResult;
+    
+    // Products sync
+    try {
+      let total = 0, versionUsed = null;
+      const seen = new Set();
+      for await (const { item: prod, version } of wix.iterateProducts()) {
+        versionUsed = version;
+        const productId = prod.id || prod._id || prod.productId || prod.product?.id;
+        const baseName = wix.s(prod.name || prod.product?.name || 'Ürün');
+        const mainSku = prod.sku || prod.product?.sku || null;
+        let price = 0;
+        if (prod.price?.amount) price = parseFloat(prod.price.amount);
+        else if (prod.priceData?.price?.amount) price = parseFloat(prod.priceData.price.amount);
+        else if (typeof prod.price === 'number') price = prod.price;
+        
+        let inventoryQuantity = null;
+        if (prod.stock?.quantity != null) {
+          inventoryQuantity = parseInt(prod.stock.quantity, 10);
+        } else if (prod.inventory?.quantity != null) {
+          inventoryQuantity = parseInt(prod.inventory.quantity, 10);
+        }
+        
+        const variants = prod.variants || prod.product?.variants || [];
+
+        if (variants && variants.length) {
+          for (const v of variants) {
+            let vSku = wix.extractVariantSku(v, mainSku);
+            if (!vSku) {
+              vSku = `${productId}:${(v.id || v.variantId || 'var')}`;
+            }
+            
+            if (seen.has(vSku)) continue;
+            seen.add(vSku);
+            const fullName = (baseName || 'Ürün') + wix.variantSuffix(v);
+            let vPrice = 0;
+            if (v.price?.amount) vPrice = parseFloat(v.price.amount);
+            else if (typeof v.price === 'number') vPrice = v.price;
+            else vPrice = price;
+            
+            let vInventoryQuantity = null;
+            if (v.stock?.quantity != null) {
+              vInventoryQuantity = parseInt(v.stock.quantity, 10);
+            } else if (v.inventory?.quantity != null) {
+              vInventoryQuantity = parseInt(v.inventory.quantity, 10);
+            } else {
+              vInventoryQuantity = inventoryQuantity;
+            }
+            
+            await run(`INSERT INTO products (sku, name, description, main_barcode, price, wix_product_id, wix_variant_id, inventory_quantity)
+                       VALUES (?,?,?,?,?,?,?,?)
+                       ON CONFLICT(sku) DO UPDATE SET
+                         name=excluded.name,
+                         price=excluded.price,
+                         wix_product_id=excluded.wix_product_id,
+                         wix_variant_id=excluded.wix_variant_id,
+                         inventory_quantity=excluded.inventory_quantity,
+                         updated_at=CURRENT_TIMESTAMP`,
+                      [String(vSku), String(fullName), null, null, vPrice, String(productId||''), String(v.id || v.variantId || ''), vInventoryQuantity]);
+            total++;
+          }
+        } else {
+          const sku = mainSku || (productId ? `WIX-${productId}` : `WIX-${Date.now()}`);
+          if (!seen.has(sku)) {
+            seen.add(sku);
+            await run(`INSERT INTO products (sku, name, description, main_barcode, price, wix_product_id, wix_variant_id, inventory_quantity)
+                       VALUES (?,?,?,?,?,?,?,?)
+                       ON CONFLICT(sku) DO UPDATE SET
+                         name=excluded.name,
+                         price=excluded.price,
+                         wix_product_id=excluded.wix_product_id,
+                         inventory_quantity=excluded.inventory_quantity,
+                         updated_at=CURRENT_TIMESTAMP`,
+                      [String(sku), String(baseName || 'Ürün'), null, null, price, String(productId||''), null, inventoryQuantity]);
+            total++;
+          }
+        }
+      }
+      productsResult = { ok: true, imported: total, versionUsed };
+    } catch (e) {
+      productsResult = { error: e.response?.data || e.message };
+    }
+
+    // Orders sync - basit versiyon
+    try {
+      let totalOrders = 0;
+      for await (const o of wix.iterateOrders()) {
+        const orderNumber = o.number || o.id;
+        let customerName = '';
+        
+        const billingFirst = o.billingInfo?.contactDetails?.firstName || '';
+        const billingLast = o.billingInfo?.contactDetails?.lastName || '';
+        if (billingFirst || billingLast) {
+          customerName = (billingFirst + ' ' + billingLast).trim();
+        }
+        
+        if (!customerName) {
+          customerName = o.buyerInfo?.contactId || 'Unknown Customer';
+        }
+        
+        const status = (o.status || 'open').toLowerCase();
+        
+        await run(`INSERT INTO orders (order_number, customer_name, status, total_amount, currency, order_date, wix_order_id)
+                   VALUES (?,?,?,?,?,?,?)
+                   ON CONFLICT(order_number) DO UPDATE SET
+                     customer_name=excluded.customer_name,
+                     status=excluded.status,
+                     total_amount=excluded.total_amount,
+                     updated_at=CURRENT_TIMESTAMP`,
+                  [String(orderNumber), String(customerName), String(status), 
+                   o.priceSummary?.subtotal?.amount || 0, o.priceSummary?.subtotal?.currency || 'TRY',
+                   o.dateCreated ? new Date(o.dateCreated).toISOString() : new Date().toISOString(),
+                   String(o._id || o.id || '')]);
+        totalOrders++;
+      }
+      ordersResult = { ok: true, importedOrders: totalOrders };
+    } catch (e) {
+      ordersResult = { error: e.response?.data || e.message };
+    }
+
+    res.json({ products: productsResult, orders: ordersResult });
   } catch (e) {
+    console.error('All sync error:', e);
     res.status(500).json({ error: e.message });
   }
 });
