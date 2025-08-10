@@ -16,7 +16,6 @@ const db = new sqlite3.Database(DB_PATH);
 // Middleware
 app.use(cors());
 app.use(express.json());
-app.use(express.static(path.join(__dirname, '..', 'public')));
 
 // Helpers
 function run(sql, params=[]) {
@@ -645,6 +644,9 @@ app.get('/api/picks/:id/delivery-note.pdf', async (req, res) => {
 
   doc.end();
 });
+
+// Static files middleware - API route'larından sonra
+app.use(express.static(path.join(__dirname, '..', 'public')));
 
 // Fallback: serve index.html
 app.get('*', (req, res) => {
