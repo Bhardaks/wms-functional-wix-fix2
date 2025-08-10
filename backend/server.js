@@ -455,6 +455,21 @@ app.post('/api/products/:id/packages', async (req, res) => {
   }
 });
 
+app.put('/api/packages/:pkgId', async (req, res) => {
+  const { pkgId } = req.params;
+  const { package_number, package_content, barcode, quantity, weight_kg, volume_m3 } = req.body;
+  try {
+    await run(`UPDATE product_packages SET 
+                 package_number=?, package_content=?, barcode=?, quantity=?, weight_kg=?, volume_m3=?, updated_at=CURRENT_TIMESTAMP 
+               WHERE id=?`,
+              [package_number || null, package_content || null, barcode, parseInt(quantity) || 1, 
+               weight_kg ? parseFloat(weight_kg) : null, volume_m3 ? parseFloat(volume_m3) : null, pkgId]);
+    res.json({ success: true });
+  } catch (e) {
+    res.status(400).json({ error: e.message });
+  }
+});
+
 app.delete('/api/packages/:pkgId', async (req, res) => {
   const { pkgId } = req.params;
   try {

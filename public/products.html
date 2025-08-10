@@ -102,8 +102,8 @@
 
 <div class="modal" id="pkgModal">
   <div class="panel">
-    <h3>Paketler: <span id="pkgProdName"></span></h3>
-    <div class="grid" style="grid-template-columns: 100px 1fr 1fr 80px 80px 80px 100px;">
+    <h3><span id="pkgModalTitle">Paketler</span>: <span id="pkgProdName"></span></h3>
+    <div class="grid" style="grid-template-columns: 100px 1fr 1fr 80px 80px 80px 100px 80px;">
       <input id="pkgNumber" placeholder="Paket No" />
       <input id="pkgContent" placeholder="Paket içeriği" />
       <input id="pkgBarcode" placeholder="Barkod" />
@@ -111,6 +111,7 @@
       <input id="pkgWeight" type="number" step="0.01" placeholder="Kg" />
       <input id="pkgVolume" type="number" step="0.001" placeholder="m³" />
       <button id="addPkgBtn">Ekle</button>
+      <button id="cancelPkgBtn" style="display:none;">İptal</button>
     </div>
     <table style="margin-top:10px">
       <thead><tr><th>Paket No</th><th>İçerik</th><th>Barkod</th><th>Adet/Set</th><th>Kg</th><th>m³</th><th></th></tr></thead>
@@ -146,6 +147,7 @@ const API = {
   async listProducts(){ return fetch('/api/products').then(r=>r.json()) },
   async listPackages(id){ return fetch('/api/products/'+id+'/packages').then(r=>r.json()) },
   async addPackage(id,p){ return fetch('/api/products/'+id+'/packages',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(p)}).then(r=>r.json()) },
+  async updatePackage(id,p){ return fetch('/api/packages/'+id,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(p)}).then(r=>r.json()) },
   async delPackage(id){ return fetch('/api/packages/'+id,{method:'DELETE'}).then(r=>r.json()) },
   async updateProduct(id,p){ return fetch('/api/products/'+id,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(p)}).then(r=>r.json()) },
   async deleteProduct(id){ return fetch('/api/products/'+id,{method:'DELETE'}).then(r=>r.json()) },
@@ -155,6 +157,38 @@ const API = {
 };
 
 let products=[], filteredProducts=[], currentPage = 1, itemsPerPage = 20;
+
+// Package editing state
+let editingPackageId = null;
+let currentProductId = null;
+
+// Clear package form
+function clearPackageForm() {
+  $('#pkgNumber').value = '';
+  $('#pkgContent').value = '';
+  $('#pkgBarcode').value = '';
+  $('#pkgQty').value = 1;
+  $('#pkgWeight').value = '';
+  $('#pkgVolume').value = '';
+  editingPackageId = null;
+  $('#pkgModalTitle').textContent = 'Paketler';
+  $('#addPkgBtn').textContent = 'Ekle';
+  $('#cancelPkgBtn').style.display = 'none';
+}
+
+// Load package data for editing
+function loadPackageForEdit(pkg) {
+  $('#pkgNumber').value = pkg.package_number || '';
+  $('#pkgContent').value = pkg.package_content || pkg.package_name || '';
+  $('#pkgBarcode').value = pkg.barcode || '';
+  $('#pkgQty').value = pkg.quantity || 1;
+  $('#pkgWeight').value = pkg.weight_kg || '';
+  $('#pkgVolume').value = pkg.volume_m3 || '';
+  editingPackageId = pkg.id;
+  $('#pkgModalTitle').textContent = 'Paketi Düzenle';
+  $('#addPkgBtn').textContent = 'Güncelle';
+  $('#cancelPkgBtn').style.display = 'inline-block';
+}
 
 // Filtreleme ve arama fonksiyonu
 function filterProducts() {
@@ -354,6 +388,11 @@ document.addEventListener('DOMContentLoaded', () => {
     exportToCSV(dataToExport);
   });
   
+  // Package form cancel button
+  $('#cancelPkgBtn').addEventListener('click', () => {
+    clearPackageForm();
+  });
+  
 });
 
 // Seçili ürünleri al
@@ -412,12 +451,18 @@ document.body.addEventListener('click', async (e)=>{
     }
   }
   if(pkgId){
+    currentProductId = pkgId;
     const prod = products.find(x=>x.id==pkgId);
     $('#pkgProdName').textContent = `${prod.name} (${prod.sku})`;
     const list = await API.listPackages(pkgId);
     const tb = $('#pkgList');
-    tb.innerHTML = list.map(pp=>`<tr><td>${pp.package_number||'-'}</td><td>${pp.package_content||pp.package_name||'-'}</td><td>${pp.barcode}</td><td>${pp.quantity}</td><td>${pp.weight_kg||'-'}</td><td>${pp.volume_m3||'-'}</td><td><button data-pkdel="${pp.id}">Sil</button></td></tr>`).join('');
+    
+    // Clear form first
+    clearPackageForm();
+    
+    tb.innerHTML = list.map(pp=>`<tr><td>${pp.package_number||'-'}</td><td>${pp.package_content||pp.package_name||'-'}</td><td>${pp.barcode}</td><td>${pp.quantity}</td><td>${pp.weight_kg||'-'}</td><td>${pp.volume_m3||'-'}</td><td><button data-pkedit="${pp.id}" style="margin-right:5px;">Düzenle</button><button data-pkdel="${pp.id}">Sil</button></td></tr>`).join('');
     $('#pkgModal').classList.add('show');
+    
     $('#addPkgBtn').onclick = async ()=>{
       const p = { 
         package_number: $('#pkgNumber').value,
@@ -427,10 +472,19 @@ document.body.addEventListener('click', async (e)=>{
         weight_kg: parseFloat($('#pkgWeight').value) || null,
         volume_m3: parseFloat($('#pkgVolume').value) || null
       };
-      await API.addPackage(pkgId,p); await refresh();
+      
+      if (editingPackageId) {
+        // Update existing package
+        await API.updatePackage(editingPackageId, p);
+      } else {
+        // Add new package
+        await API.addPackage(pkgId, p);
+      }
+      
+      await refresh();
       const list2 = await API.listPackages(pkgId);
-      tb.innerHTML = list2.map(pp=>`<tr><td>${pp.package_number||'-'}</td><td>${pp.package_content||pp.package_name||'-'}</td><td>${pp.barcode}</td><td>${pp.quantity}</td><td>${pp.weight_kg||'-'}</td><td>${pp.volume_m3||'-'}</td><td><button data-pkdel="${pp.id}">Sil</button></td></tr>`).join('');
-      $('#pkgNumber').value=''; $('#pkgContent').value=''; $('#pkgBarcode').value=''; $('#pkgQty').value=1; $('#pkgWeight').value=''; $('#pkgVolume').value='';
+      tb.innerHTML = list2.map(pp=>`<tr><td>${pp.package_number||'-'}</td><td>${pp.package_content||pp.package_name||'-'}</td><td>${pp.barcode}</td><td>${pp.quantity}</td><td>${pp.weight_kg||'-'}</td><td>${pp.volume_m3||'-'}</td><td><button data-pkedit="${pp.id}" style="margin-right:5px;">Düzenle</button><button data-pkdel="${pp.id}">Sil</button></td></tr>`).join('');
+      clearPackageForm();
     };
   }
   if(delId){ await API.deleteProduct(delId); await refresh(); }
@@ -461,6 +515,15 @@ document.body.addEventListener('click', async (e)=>{
     const desc = prompt('Açıklama:', p.description||'');
     await API.updateProduct(editId,{sku, name, price, main_barcode: barcode, description: desc});
     await refresh();
+  }
+  const pkedit = e.target.getAttribute('data-pkedit');
+  if(pkedit){
+    // Find the package data and load for editing
+    const list = await API.listPackages(currentProductId);
+    const pkg = list.find(p => p.id == pkedit);
+    if(pkg) {
+      loadPackageForEdit(pkg);
+    }
   }
   const pkdel = e.target.getAttribute('data-pkdel');
   if(pkdel){ await API.delPackage(pkdel); await refresh(); }
