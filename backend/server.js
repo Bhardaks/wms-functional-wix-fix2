@@ -78,29 +78,13 @@ async function initDatabase() {
     // Default admin kullanıcısı oluştur
     const existingAdmin = await get('SELECT id FROM users WHERE username = ?', ['admin']);
     if (!existingAdmin) {
-      const adminPasswordHash = await bcrypt.hash('admin123', 10);
+      const adminPasswordHash = await bcrypt.hash('18095', 10);
       await run(`
         INSERT INTO users (username, password_hash, role, full_name, email)
         VALUES (?, ?, ?, ?, ?)
       `, ['admin', adminPasswordHash, 'admin', 'Sistem Yöneticisi', 'admin@wms.com']);
     }
 
-    // Test kullanıcıları oluştur
-    const testUsers = [
-      { username: 'operator', password: 'op123', role: 'operator', full_name: 'Depo Operatörü' },
-      { username: 'service', password: 'serv123', role: 'service', full_name: 'Servis Teknisyeni' }
-    ];
-
-    for (const user of testUsers) {
-      const existing = await get('SELECT id FROM users WHERE username = ?', [user.username]);
-      if (!existing) {
-        const passwordHash = await bcrypt.hash(user.password, 10);
-        await run(`
-          INSERT INTO users (username, password_hash, role, full_name)
-          VALUES (?, ?, ?, ?)
-        `, [user.username, passwordHash, user.role, user.full_name]);
-      }
-    }
 
     console.log('✅ Users table initialized');
 
