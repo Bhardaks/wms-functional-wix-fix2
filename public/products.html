@@ -7,24 +7,19 @@
   <title>Ürünler</title>
   <link rel="stylesheet" href="/assets/css/styles.css" />
   <link rel="stylesheet" href="/assets/css/zebra-terminal.css" />
+  <script src="/assets/js/auth.js"></script>
 </head>
 <body>
 <header>
-  <h1>Ürünler</h1>
-  <nav>
-    <a href="/index.html">Ana Sayfa</a>
-    <a href="/products.html">Ürünler</a>
-    <a href="/orders.html">Siparişler</a>
-    <a href="/pick.html">Toplama</a>
-  </nav>
-  <div id="mobileNav" class="mobile-nav">
-    <button id="mobileNavToggle" class="mobile-nav-toggle">☰</button>
-    <div id="mobileNavMenu" class="mobile-nav-menu">
-      <a href="/index.html">Ana Sayfa</a>
-      <a href="/products.html">Ürünler</a>
-      <a href="/orders.html">Siparişler</a>
-      <a href="/pick.html">Toplama</a>
-    </div>
+  <div class="header-brand">
+    <h1>WMS Yönetim Sistemi</h1>
+    <span class="header-subtitle">Ürün Yönetimi</span>
+  </div>
+  <div class="header-actions">
+    <a href="/index.html" class="home-btn">
+      <span class="home-icon">🏠</span>
+      <span class="home-text">Ana Sayfa</span>
+    </a>
   </div>
 </header>
 
@@ -87,6 +82,7 @@
             <th>Ad</th>
             <th>Fiyat</th>
             <th>Stok</th>
+            <th>Renk</th>
             <th>Konum</th>
             <th>Paketler</th>
             <th>Son Güncelleme</th>
@@ -102,25 +98,70 @@
 
 <div class="modal" id="pkgModal">
   <div class="panel">
-    <h3><span id="pkgModalTitle">Paketler</span>: <span id="pkgProdName"></span></h3>
-    <div class="grid" style="grid-template-columns: 100px 1fr 1fr 80px 80px 80px 100px 80px;">
-      <input id="pkgNumber" placeholder="Paket No" />
-      <input id="pkgContent" placeholder="Paket içeriği" />
-      <input id="pkgBarcode" placeholder="Barkod" />
-      <input id="pkgQty" type="number" value="1" placeholder="Adet" />
-      <input id="pkgWeight" type="number" step="0.01" placeholder="Kg" />
-      <input id="pkgVolume" type="number" step="0.001" placeholder="m³" />
-      <button id="addPkgBtn">Ekle</button>
-      <button id="cancelPkgBtn" style="display:none;">İptal</button>
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+      <h3 style="margin: 0;"><span id="pkgModalTitle">Paket Yönetimi</span>: <span id="pkgProdName" style="color: var(--accent);"></span></h3>
+      <button onclick="document.getElementById('pkgModal').classList.remove('show')" style="background: none; border: none; color: var(--muted); font-size: 24px; cursor: pointer;">×</button>
     </div>
-    <table style="margin-top:10px">
-      <thead><tr><th>Paket No</th><th>İçerik</th><th>Barkod</th><th>Adet/Set</th><th>Kg</th><th>m³</th><th></th></tr></thead>
-      <tbody id="pkgList"></tbody>
-    </table>
-    <div class="flex" style="justify-content:flex-end;margin-top:10px">
-      <button onclick="document.getElementById('pkgModal').classList.remove('show')">Kapat</button>
+    
+    <!-- Paket Ekleme Formu -->
+    <div class="card" style="margin-bottom: 20px;">
+      <h4 style="margin: 0 0 15px 0;">Yeni Paket Ekle</h4>
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin-bottom: 15px;">
+        <div>
+          <label style="display: block; margin-bottom: 5px; font-size: 0.9em; color: var(--muted);">Paket No *</label>
+          <input id="pkgNumber" placeholder="Örn: PKG001" required style="width: 100%;" />
+        </div>
+        <div>
+          <label style="display: block; margin-bottom: 5px; font-size: 0.9em; color: var(--muted);">Barkod *</label>
+          <input id="pkgBarcode" placeholder="Örn: 1234567890123" required style="width: 100%;" />
+        </div>
+        <div>
+          <label style="display: block; margin-bottom: 5px; font-size: 0.9em; color: var(--muted);">Paket İçeriği</label>
+          <input id="pkgContent" placeholder="Örn: Ana parça seti" style="width: 100%;" />
+        </div>
+        <div>
+          <label style="display: block; margin-bottom: 5px; font-size: 0.9em; color: var(--muted);">Adet</label>
+          <input id="pkgQty" type="number" value="1" min="1" placeholder="1" style="width: 100%;" />
+        </div>
+        <div>
+          <label style="display: block; margin-bottom: 5px; font-size: 0.9em; color: var(--muted);">Ağırlık (Kg)</label>
+          <input id="pkgWeight" type="number" step="0.01" min="0" placeholder="0.00" style="width: 100%;" />
+        </div>
+        <div>
+          <label style="display: block; margin-bottom: 5px; font-size: 0.9em; color: var(--muted);">Hacim (m³)</label>
+          <input id="pkgVolume" type="number" step="0.001" min="0" placeholder="0.000" style="width: 100%;" />
+        </div>
+      </div>
+      <div style="display: flex; gap: 10px;">
+        <button id="addPkgBtn" class="btn-primary" style="flex: 1;">
+          <span id="addPkgBtnText">📦 Paket Ekle</span>
+        </button>
+        <button id="cancelPkgBtn" style="display:none; background: var(--muted);" onclick="cancelPackageEdit()">İptal</button>
+      </div>
+    </div>
+    
+    <!-- Paket Listesi -->
+    <div class="card">
+      <h4 style="margin: 0 0 15px 0;">Mevcut Paketler</h4>
+      <div style="overflow-x: auto;">
+        <table style="width: 100%; border-collapse: collapse;">
+          <thead>
+            <tr style="background: var(--hover);">
+              <th style="padding: 12px 8px; text-align: left; border-bottom: 1px solid var(--border);">Paket No</th>
+              <th style="padding: 12px 8px; text-align: left; border-bottom: 1px solid var(--border);">İçerik</th>
+              <th style="padding: 12px 8px; text-align: left; border-bottom: 1px solid var(--border);">Barkod</th>
+              <th style="padding: 12px 8px; text-align: center; border-bottom: 1px solid var(--border);">Adet</th>
+              <th style="padding: 12px 8px; text-align: center; border-bottom: 1px solid var(--border);">Ağırlık</th>
+              <th style="padding: 12px 8px; text-align: center; border-bottom: 1px solid var(--border);">Hacim</th>
+              <th style="padding: 12px 8px; text-align: center; border-bottom: 1px solid var(--border);">İşlemler</th>
+            </tr>
+          </thead>
+          <tbody id="pkgList"></tbody>
+        </table>
+      </div>
     </div>
   </div>
+</div>
 
 <div class="modal" id="locModal">
   <div class="panel">
@@ -140,14 +181,89 @@
   </div>
 </div>
 
+<div class="modal" id="editProductModal">
+  <div class="panel">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+      <h3 style="margin: 0;">Ürün Düzenle: <span id="editProdName" style="color: var(--accent);"></span></h3>
+      <button onclick="closeEditModal()" style="background: none; border: none; color: var(--muted); font-size: 24px; cursor: pointer;">×</button>
+    </div>
+    
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px;">
+      <div>
+        <label style="display: block; margin-bottom: 5px; font-weight: 500;">SKU *</label>
+        <input id="editSku" required style="width: 100%;" />
+      </div>
+      <div>
+        <label style="display: block; margin-bottom: 5px; font-weight: 500;">Fiyat</label>
+        <input id="editPrice" type="number" step="0.01" style="width: 100%;" />
+      </div>
+      <div style="grid-column: 1 / -1;">
+        <label style="display: block; margin-bottom: 5px; font-weight: 500;">Ürün Adı *</label>
+        <input id="editName" required style="width: 100%;" />
+      </div>
+      <div>
+        <label style="display: block; margin-bottom: 5px; font-weight: 500;">Ana Barkod</label>
+        <input id="editBarcode" style="width: 100%;" />
+      </div>
+      <div>
+        <label style="display: block; margin-bottom: 5px; font-weight: 500;">Renk</label>
+        <div style="position: relative;">
+          <input 
+            id="editColor" 
+            list="colorOptions" 
+            placeholder="Renk yazın veya listeden seçin" 
+            style="width: 100%;"
+          />
+          <datalist id="colorOptions">
+            <option value="BEYAZ">
+            <option value="SİYAH">
+            <option value="KAHVE">
+            <option value="GRİ">
+            <option value="ANTRASIT">
+            <option value="KREM">
+            <option value="LACİVERT">
+            <option value="BORDO">
+            <option value="YEŞİL">
+            <option value="MAVİ">
+            <option value="MOR">
+            <option value="PEMBE">
+            <option value="TURUNCU">
+            <option value="SARI">
+          </datalist>
+        </div>
+        <small style="color: var(--muted); font-size: 11px;">Önerilen renkler: BEYAZ, SİYAH, KAHVE, GRİ, ANTRASIT</small>
+      </div>
+      <div style="grid-column: 1 / -1;">
+        <label style="display: block; margin-bottom: 5px; font-weight: 500;">Açıklama</label>
+        <textarea id="editDesc" rows="3" style="width: 100%; resize: vertical;"></textarea>
+      </div>
+    </div>
+    
+    <div style="display: flex; gap: 10px; justify-content: flex-end;">
+      <button onclick="closeEditModal()" style="background: var(--muted); color: var(--fg);">İptal</button>
+      <button id="saveProductBtn" onclick="saveProduct()" class="btn-primary">Kaydet</button>
+    </div>
+  </div>
+</div>
+
 
 <script type="module">
 const $ = (s)=>document.querySelector(s);
 const API = {
   async listProducts(){ return fetch('/api/products').then(r=>r.json()) },
   async listPackages(id){ return fetch('/api/products/'+id+'/packages').then(r=>r.json()) },
-  async addPackage(id,p){ return fetch('/api/products/'+id+'/packages',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(p)}).then(r=>r.json()) },
-  async updatePackage(id,p){ return fetch('/api/packages/'+id,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(p)}).then(r=>r.json()) },
+  async addPackage(id,p){ 
+    const response = await fetch('/api/products/'+id+'/packages',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(p)});
+    const result = await response.json();
+    if (!response.ok) throw new Error(result.error || 'Paket eklenirken hata oluştu');
+    return result;
+  },
+  async updatePackage(id,p){ 
+    const response = await fetch('/api/packages/'+id,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(p)});
+    const result = await response.json();
+    if (!response.ok) throw new Error(result.error || 'Paket güncellenirken hata oluştu');
+    return result;
+  },
   async delPackage(id){ return fetch('/api/packages/'+id,{method:'DELETE'}).then(r=>r.json()) },
   async updateProduct(id,p){ return fetch('/api/products/'+id,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(p)}).then(r=>r.json()) },
   async deleteProduct(id){ return fetch('/api/products/'+id,{method:'DELETE'}).then(r=>r.json()) },
@@ -161,6 +277,27 @@ let products=[], filteredProducts=[], currentPage = 1, itemsPerPage = 20;
 // Package editing state
 let editingPackageId = null;
 let currentProductId = null;
+let currentEditingProduct = null;
+
+// Renk için background color belirleme
+function getColorBg(color) {
+  if (!color) return '#f8f9fa';
+  const c = color.toUpperCase();
+  if (c.includes('BEYAZ') || c.includes('WHITE')) return '#f8f9fa';
+  if (c.includes('SİYAH') || c.includes('BLACK')) return '#212529';
+  if (c.includes('KAHVE') || c.includes('BROWN')) return '#8B4513';
+  if (c.includes('GRİ') || c.includes('GRAY')) return '#6c757d';
+  if (c.includes('ANTRASIT') || c.includes('ANTHRACITE')) return '#343a40';
+  return '#17a2b8'; // default
+}
+
+// Renk için text color belirleme
+function getColorText(color) {
+  if (!color) return '#000';
+  const c = color.toUpperCase();
+  if (c.includes('BEYAZ') || c.includes('WHITE')) return '#000';
+  return '#fff'; // dark backgrounds için white text
+}
 
 // Clear package form
 function clearPackageForm() {
@@ -171,10 +308,77 @@ function clearPackageForm() {
   $('#pkgWeight').value = '';
   $('#pkgVolume').value = '';
   editingPackageId = null;
-  $('#pkgModalTitle').textContent = 'Paketler';
-  $('#addPkgBtn').textContent = 'Ekle';
+  $('#addPkgBtnText').textContent = '📦 Paket Ekle';
   $('#cancelPkgBtn').style.display = 'none';
 }
+
+// Cancel package editing
+function cancelPackageEdit() {
+  clearPackageForm();
+}
+
+// Edit product modal functions
+function openEditModal(product) {
+  currentEditingProduct = product;
+  $('#editProdName').textContent = `${product.name} (${product.sku})`;
+  $('#editSku').value = product.sku || '';
+  $('#editName').value = product.name || '';
+  $('#editPrice').value = product.price || '';
+  $('#editBarcode').value = product.main_barcode || '';
+  $('#editColor').value = product.color || '';
+  $('#editDesc').value = product.description || '';
+  
+  document.getElementById('editProductModal').classList.add('show');
+}
+
+function closeEditModal() {
+  currentEditingProduct = null;
+  document.getElementById('editProductModal').classList.remove('show');
+}
+
+// Global scope için window'a ekle
+window.closeEditModal = closeEditModal;
+window.openEditModal = openEditModal;
+
+async function saveProduct() {
+  if (!currentEditingProduct) return;
+  
+  const sku = $('#editSku').value.trim();
+  const name = $('#editName').value.trim();
+  
+  if (!sku || !name) {
+    alert('SKU ve Ürün Adı zorunludur!');
+    return;
+  }
+  
+  const saveBtn = $('#saveProductBtn');
+  const originalText = saveBtn.textContent;
+  saveBtn.textContent = 'Kaydediliyor...';
+  saveBtn.disabled = true;
+  
+  try {
+    const updatedData = {
+      sku: sku,
+      name: name,
+      price: parseFloat($('#editPrice').value) || 0,
+      main_barcode: $('#editBarcode').value.trim() || null,
+      color: $('#editColor').value || null,
+      description: $('#editDesc').value.trim() || null
+    };
+    
+    await API.updateProduct(currentEditingProduct.id, updatedData);
+    await refresh();
+    closeEditModal();
+  } catch (error) {
+    alert('Güncelleme hatası: ' + error.message);
+  } finally {
+    saveBtn.textContent = originalText;
+    saveBtn.disabled = false;
+  }
+}
+
+// saveProduct'ı da global scope'a ekle
+window.saveProduct = saveProduct;
 
 // Load package data for editing
 function loadPackageForEdit(pkg) {
@@ -185,8 +389,7 @@ function loadPackageForEdit(pkg) {
   $('#pkgWeight').value = pkg.weight_kg || '';
   $('#pkgVolume').value = pkg.volume_m3 || '';
   editingPackageId = pkg.id;
-  $('#pkgModalTitle').textContent = 'Paketi Düzenle';
-  $('#addPkgBtn').textContent = 'Güncelle';
+  $('#addPkgBtnText').textContent = '✏️ Paketi Güncelle';
   $('#cancelPkgBtn').style.display = 'inline-block';
 }
 
@@ -264,6 +467,9 @@ function renderProducts() {
         </span>
       </td>
       <td>
+        ${p.color ? `<span style="background: ${getColorBg(p.color)}; color: ${getColorText(p.color)}; padding: 4px 8px; border-radius: 4px; font-size: 11px; font-weight: 500;">${p.color}</span>` : '<span class="no-color">-</span>'}
+      </td>
+      <td>
         <div class="locations">
           ${(p.location_codes||[]).map(loc => `<span class="location-tag">${loc}</span>`).join('') || '<span class="no-location">Konum Yok</span>'}
         </div>
@@ -339,29 +545,9 @@ async function refresh(){
   renderProducts();
 }
 
-// Mobile navigation toggle
-function setupMobileNav() {
-  const toggle = document.getElementById('mobileNavToggle');
-  const menu = document.getElementById('mobileNavMenu');
-  
-  if (toggle && menu) {
-    toggle.addEventListener('click', () => {
-      menu.classList.toggle('show');
-    });
-    
-    // Close mobile menu when clicking outside
-    document.addEventListener('click', (e) => {
-      const nav = document.getElementById('mobileNav');
-      if (nav && !nav.contains(e.target)) {
-        menu.classList.remove('show');
-      }
-    });
-  }
-}
 
 // Event listeners
 document.addEventListener('DOMContentLoaded', () => {
-  setupMobileNav();
   // Arama ve filtreler
   $('#searchInput').addEventListener('input', filterProducts);
   $('#statusFilter').addEventListener('change', filterProducts);
@@ -487,30 +673,77 @@ document.body.addEventListener('click', async (e)=>{
     // Clear form first
     clearPackageForm();
     
-    tb.innerHTML = list.map(pp=>`<tr><td>${pp.package_number||'-'}</td><td>${pp.package_content||pp.package_name||'-'}</td><td>${pp.barcode}</td><td>${pp.quantity}</td><td>${pp.weight_kg||'-'}</td><td>${pp.volume_m3||'-'}</td><td><button data-pkedit="${pp.id}" style="margin-right:5px;">Düzenle</button><button data-pkdel="${pp.id}">Sil</button></td></tr>`).join('');
+    tb.innerHTML = list.length ? list.map(pp=>`
+      <tr>
+        <td><strong>${pp.package_number || '-'}</strong></td>
+        <td>${pp.package_content || pp.package_name || '-'}</td>
+        <td><code style="background: var(--hover); padding: 2px 6px; border-radius: 4px; font-size: 0.9em;">${pp.barcode}</code></td>
+        <td style="text-align: center;"><span style="background: var(--accent); color: white; padding: 2px 8px; border-radius: 12px; font-size: 0.85em;">${pp.quantity}</span></td>
+        <td style="text-align: center;">${pp.weight_kg ? pp.weight_kg + ' kg' : '-'}</td>
+        <td style="text-align: center;">${pp.volume_m3 ? pp.volume_m3 + ' m³' : '-'}</td>
+        <td style="text-align: center;">
+          <button data-pkedit="${pp.id}" style="background: var(--warning); color: white; border: none; border-radius: 4px; margin-right: 5px;">✏️ Düzenle</button>
+          <button data-pkdel="${pp.id}" style="background: var(--danger); color: white; border: none; border-radius: 4px;">🗑️ Sil</button>
+        </td>
+      </tr>
+    `).join('') : '<tr><td colspan="7" style="text-align: center; padding: 20px; color: var(--muted);"><em>Henüz paket tanımlanmamış</em></td></tr>';
     $('#pkgModal').classList.add('show');
     
     $('#addPkgBtn').onclick = async ()=>{
+      // Zorunlu alan kontrolü
+      const packageNumber = $('#pkgNumber').value?.trim();
+      const barcode = $('#pkgBarcode').value?.trim();
+      
+      if (!packageNumber) {
+        alert('Paket numarası zorunludur!');
+        $('#pkgNumber').focus();
+        return;
+      }
+      
+      if (!barcode) {
+        alert('Barkod zorunludur!');
+        $('#pkgBarcode').focus();
+        return;
+      }
+      
       const p = { 
-        package_number: $('#pkgNumber').value,
-        package_content: $('#pkgContent').value,
-        barcode: $('#pkgBarcode').value, 
+        package_number: packageNumber,
+        package_content: $('#pkgContent').value?.trim() || null,
+        barcode: barcode, 
         quantity: parseInt($('#pkgQty').value||1,10),
         weight_kg: parseFloat($('#pkgWeight').value) || null,
         volume_m3: parseFloat($('#pkgVolume').value) || null
       };
       
-      if (editingPackageId) {
-        // Update existing package
-        await API.updatePackage(editingPackageId, p);
-      } else {
-        // Add new package
-        await API.addPackage(pkgId, p);
+      try {
+        if (editingPackageId) {
+          // Update existing package
+          await API.updatePackage(editingPackageId, p);
+        } else {
+          // Add new package
+          await API.addPackage(pkgId, p);
+        }
+      } catch (error) {
+        alert(error.message || 'Bir hata oluştu');
+        return;
       }
       
       await refresh();
       const list2 = await API.listPackages(pkgId);
-      tb.innerHTML = list2.map(pp=>`<tr><td>${pp.package_number||'-'}</td><td>${pp.package_content||pp.package_name||'-'}</td><td>${pp.barcode}</td><td>${pp.quantity}</td><td>${pp.weight_kg||'-'}</td><td>${pp.volume_m3||'-'}</td><td><button data-pkedit="${pp.id}" style="margin-right:5px;">Düzenle</button><button data-pkdel="${pp.id}">Sil</button></td></tr>`).join('');
+      tb.innerHTML = list2.length ? list2.map(pp=>`
+        <tr>
+          <td><strong>${pp.package_number || '-'}</strong></td>
+          <td>${pp.package_content || pp.package_name || '-'}</td>
+          <td><code style="background: var(--hover); padding: 2px 6px; border-radius: 4px; font-size: 0.9em;">${pp.barcode}</code></td>
+          <td style="text-align: center;"><span style="background: var(--accent); color: white; padding: 2px 8px; border-radius: 12px; font-size: 0.85em;">${pp.quantity}</span></td>
+          <td style="text-align: center;">${pp.weight_kg ? pp.weight_kg + ' kg' : '-'}</td>
+          <td style="text-align: center;">${pp.volume_m3 ? pp.volume_m3 + ' m³' : '-'}</td>
+          <td style="text-align: center;">
+            <button data-pkedit="${pp.id}" style="background: var(--warning); color: white; border: none; border-radius: 4px; margin-right: 5px;">✏️ Düzenle</button>
+            <button data-pkdel="${pp.id}" style="background: var(--danger); color: white; border: none; border-radius: 4px;">🗑️ Sil</button>
+          </td>
+        </tr>
+      `).join('') : '<tr><td colspan="7" style="text-align: center; padding: 20px; color: var(--muted);"><em>Henüz paket tanımlanmamış</em></td></tr>';
       clearPackageForm();
     };
   }
@@ -535,13 +768,7 @@ document.body.addEventListener('click', async (e)=>{
   }
   if(editId){
     const p = products.find(x=>x.id==editId);
-    const sku = prompt('SKU:', p.sku); if(!sku) return;
-    const name = prompt('Ad:', p.name); if(!name) return;
-    const price = parseFloat(prompt('Fiyat:', p.price||0) || '0');
-    const barcode = prompt('Ana Barkod:', p.main_barcode||'');
-    const desc = prompt('Açıklama:', p.description||'');
-    await API.updateProduct(editId,{sku, name, price, main_barcode: barcode, description: desc});
-    await refresh();
+    openEditModal(p);
   }
   const pkedit = e.target.getAttribute('data-pkedit');
   if(pkedit){

@@ -66,7 +66,7 @@
       
       .mobile-item-details {
         display: grid;
-        grid-template-columns: 1fr 1fr 1fr;
+        grid-template-columns: 1fr 1fr 1fr 1fr;
         gap: 8px;
         font-size: 12px;
       }
@@ -89,22 +89,6 @@
         color: var(--fg);
       }
       
-      /* Mobile camera optimizations */
-      #preview {
-        width: 100% !important;
-        min-height: 200px !important;
-        max-height: 300px !important;
-      }
-      
-      /* Mobile camera toggle button */
-      #cameraToggle {
-        font-size: 12px !important;
-        padding: 6px 12px !important;
-      }
-      
-      #cameraToggle span {
-        font-size: 14px;
-      }
     }
     
     @media (min-width: 769px) {
@@ -116,9 +100,133 @@
         display: table !important;
       }
     }
+    
+    /* Package Location Styles */
+    .package-locations {
+      margin: 12px 0;
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 6px;
+      padding: 10px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    
+    .locations-header {
+      font-size: 12px;
+      font-weight: bold;
+      color: #4da3ff;
+      margin-bottom: 8px;
+      text-align: center;
+    }
+    
+    .location-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 6px 8px;
+      margin: 4px 0;
+      background: rgba(0, 0, 0, 0.2);
+      border-radius: 4px;
+      font-size: 12px;
+      position: relative;
+    }
+    
+    .location-item.first-fifo {
+      background: rgba(34, 197, 94, 0.2);
+      border: 1px solid #22c55e;
+      animation: pulse 2s infinite;
+    }
+    
+    @keyframes pulse {
+      0% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.7); }
+      70% { box-shadow: 0 0 0 5px rgba(34, 197, 94, 0); }
+      100% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0); }
+    }
+    
+    .shelf-code {
+      font-weight: bold;
+      color: #4da3ff;
+    }
+    
+    .shelf-info {
+      color: #93a4bd;
+      font-size: 11px;
+    }
+    
+    .shelf-qty {
+      background: #f59e0b;
+      color: white;
+      padding: 2px 6px;
+      border-radius: 10px;
+      font-size: 10px;
+      font-weight: bold;
+    }
+    
+    .fifo-badge {
+      position: absolute;
+      top: -5px;
+      right: -5px;
+      background: #22c55e;
+      color: white;
+      font-size: 8px;
+      padding: 2px 4px;
+      border-radius: 8px;
+      font-weight: bold;
+    }
+    
+    .no-locations {
+      text-align: center;
+      color: #ef4444;
+      font-size: 12px;
+      padding: 8px;
+      background: rgba(239, 68, 68, 0.1);
+      border: 1px solid rgba(239, 68, 68, 0.3);
+      border-radius: 4px;
+      margin: 8px 0;
+    }
+    
+    /* Product color badge styles */
+    .color-badge {
+      display: inline-block;
+      padding: 3px 8px;
+      border-radius: 12px;
+      font-size: 11px;
+      font-weight: bold;
+      color: white;
+      text-shadow: 0 1px 1px rgba(0,0,0,0.3);
+      margin: 2px;
+      min-width: 45px;
+      text-align: center;
+    }
+    
+    .color-badge.beyaz { background: linear-gradient(135deg, #f8f9fa, #e9ecef); color: #333; }
+    .color-badge.siyah { background: linear-gradient(135deg, #343a40, #212529); }
+    .color-badge.kahve { background: linear-gradient(135deg, #8b4513, #a0522d); }
+    .color-badge.gri { background: linear-gradient(135deg, #6c757d, #495057); }
+    .color-badge.antrasit { background: linear-gradient(135deg, #36454f, #2f3640); }
+    .color-badge.mavi { background: linear-gradient(135deg, #007bff, #0056b3); }
+    .color-badge.kirmizi { background: linear-gradient(135deg, #dc3545, #c82333); }
+    .color-badge.yesil { background: linear-gradient(135deg, #28a745, #1e7e34); }
+    .color-badge.sari { background: linear-gradient(135deg, #ffc107, #e0a800); color: #333; }
+    .color-badge.pembe { background: linear-gradient(135deg, #e83e8c, #d91a72); }
+    .color-badge.mor { background: linear-gradient(135deg, #6f42c1, #59359a); }
+    .color-badge.turuncu { background: linear-gradient(135deg, #fd7e14, #e8590c); }
+    .color-badge.default { background: linear-gradient(135deg, #6c757d, #5a6268); }
+    
+    /* Package content styling */
+    .package-content {
+      margin: 8px 0;
+      padding: 6px 8px;
+      background: rgba(0, 0, 0, 0.1);
+      border-radius: 4px;
+      border-left: 3px solid rgba(255, 255, 255, 0.2);
+    }
+    
+    .package-content small {
+      color: #93a4bd;
+      font-size: 11px;
+      line-height: 1.3;
+    }
   </style>
-  <!-- ZXing-js for camera barcode scanning -->
-  <script src="https://unpkg.com/@zxing/library@latest/umd/index.min.js"></script>
 </head>
 <body>
 <header>
@@ -134,21 +242,15 @@
       <h2>Tarayıcı</h2>
       <div style="display:flex;gap:8px;">
         <button id="debugBtn" style="background:#6f42c1;color:white;border:none;padding:6px 12px;border-radius:4px;cursor:pointer;font-size:12px;">Debug</button>
-        <button id="cameraToggle" style="background:#007bff;color:white;border:none;padding:8px 16px;border-radius:6px;cursor:pointer;display:flex;align-items:center;gap:8px;">
-          <span id="cameraIcon">📷</span>
-          <span id="cameraText">Kamera Aç</span>
-        </button>
+        <div id="locationVerifyStatus" style="background:#6c757d;color:white;padding:8px 16px;border-radius:6px;display:flex;align-items:center;gap:8px;cursor:pointer;font-weight:bold;">
+          <span id="locationVerifyIcon">🔓</span>
+          <span id="locationVerifyText">Lokasyon Teyit: OPSİYONEL</span>
+        </div>
       </div>
     </div>
-    <video id="preview" autoplay playsinline muted style="width:100%; border-radius:12px; background:#000; max-height:340px; min-height:200px; object-fit:cover; border: 1px solid #ccc; display:none;"></video>
     <div class="flex" style="margin-top:16px;gap:12px;">
-      <input id="manual" placeholder="Barkod Girin veya Scanner ile Okutun" class="scanner-input" style="flex:1;font-size:20px;padding:16px;text-align:center;" />
+      <input id="manual" placeholder="Ürün Barkodunu Okutun" class="scanner-input" style="flex:1;font-size:20px;padding:16px;text-align:center;" />
       <button id="enter" class="btn-large" style="background:#22c55e;color:white;min-width:120px;">Ekle</button>
-    </div>
-    <div style="margin-top:12px;text-align:center;">
-      <div style="font-size:14px;color:#888;margin-bottom:8px;">Alternatif: Barkod resmini yükleyin</div>
-      <input type="file" id="barcodeFile" accept="image/*" capture="environment" style="display:none;" />
-      <button onclick="$('#barcodeFile').click()" style="background:#666;color:white;border:none;padding:8px 16px;border-radius:4px;cursor:pointer;">📸 Resim Yükle</button>
     </div>
     <div class="grid" style="grid-template-columns: 1fr 1fr;">
       <div><strong>Son Okunan:</strong> <span id="last"></span></div>
@@ -161,7 +263,7 @@
     <div id="orderInfo"></div>
     <div id="itemsContainer">
       <div id="mobileItems" class="mobile-only"></div>
-      <table id="items" class="desktop-only"><thead><tr><th>SKU</th><th>Ürün</th><th>Paketler</th><th>Toplanan</th><th>Adet</th></tr></thead><tbody></tbody></table>
+      <table id="items" class="desktop-only"><thead><tr><th>SKU</th><th>Ürün</th><th>Renk</th><th>Paketler</th><th>Toplanan</th><th>Adet</th></tr></thead><tbody></tbody></table>
       <div id="packageDetails" class="package-details"></div>
     </div>
   </section>
@@ -178,6 +280,26 @@ const pickId = url.searchParams.get('pick');
 let pickData=null;
 let currentlyViewedItemId = null; // Hangi item'ın package details'i açık
 
+// Lokasyon teyit sistemi - Opsiyonel
+let locationVerificationEnabled = false; // Varsayılan olarak kapalı
+let pendingPackageBarcode = null;
+let isWaitingForLocationScan = false;
+
+// Color badge creation function
+function createColorBadge(color) {
+  if (!color) return '<span class="color-badge default">-</span>';
+  
+  const colorClass = color.toLowerCase()
+    .replace('ı', 'i')
+    .replace('ü', 'u')
+    .replace('ğ', 'g')
+    .replace('ş', 's')
+    .replace('ç', 'c')
+    .replace(/\s+/g, '');
+  
+  return `<span class="color-badge ${colorClass}">${color}</span>`;
+}
+
 async function loadPick(){
   console.log('Loading pick with ID:', pickId);
   if(!pickId){
@@ -192,6 +314,25 @@ async function loadPick(){
     }
     pickData = await r.json();
     console.log('Pick data loaded:', pickData);
+    
+    // Debug: Paket lokasyonlarını kontrol et
+    if (pickData.items) {
+      pickData.items.forEach((item, itemIndex) => {
+        console.log(`🔍 Item ${itemIndex}: ${item.sku} - ${item.product_name}`);
+        if (item.packages) {
+          item.packages.forEach((pkg, pkgIndex) => {
+            console.log(`  📦 Package ${pkgIndex}: ${pkg.package_name} (${pkg.barcode})`);
+            if (pkg.locations && pkg.locations.length > 0) {
+              console.log(`    📍 Locations:`, pkg.locations);
+            } else {
+              console.log(`    ❌ No locations found for this package`);
+            }
+          });
+        } else {
+          console.log(`  ❌ No packages found for this item`);
+        }
+      });
+    }
     
     if(!pickData.order) {
       throw new Error('Sipariş bilgisi bulunamadı');
@@ -230,6 +371,7 @@ async function loadPick(){
         return `<tr class="${cls}" onclick="showPackageDetails(${it.id})" style="cursor: pointer;">
           <td>${statusIcon} ${it.sku}</td>
           <td>${it.product_name}</td>
+          <td>${createColorBadge(it.product_color)}</td>
           <td><span class="package-count">${it.packages ? it.packages.length : 0} paket</span></td>
           <td class="picked-cell">
             ${totalRequiredPackages > 0 
@@ -263,6 +405,10 @@ async function loadPick(){
           <div class="mobile-item-name">${it.product_name}</div>
           <div class="mobile-item-details">
             <div class="mobile-item-detail">
+              <span class="mobile-item-detail-label">Renk</span>
+              <span class="mobile-item-detail-value">${createColorBadge(it.product_color)}</span>
+            </div>
+            <div class="mobile-item-detail">
               <span class="mobile-item-detail-label">Paketler</span>
               <span class="mobile-item-detail-value">${it.packages ? it.packages.length : 0}</span>
             </div>
@@ -294,6 +440,31 @@ async function loadPick(){
 async function submitBarcode(code){
   console.log('🔍 Submitting barcode:', code);
   
+  // Lokasyon teyit modunda lokasyon taraması bekleniyor
+  if (isWaitingForLocationScan) {
+    await handleLocationScan(code);
+    return;
+  }
+  
+  // Lokasyon teyit modu açıksa ve bu bir ürün barkodu
+  if (locationVerificationEnabled) {
+    pendingPackageBarcode = code;
+    isWaitingForLocationScan = true;
+    
+    // Input placeholder'ını değiştir ve görsel feedback ver
+    $('#manual').placeholder = 'Şimdi raf barkodunu okutun (lokasyon teyit)';
+    $('#manual').style.background = '#fff3cd';
+    $('#manual').style.border = '2px solid #f0ad4e';
+    
+    // Kullanıcıya bilgi ver
+    $('#last').textContent = `📦 Paket: ${code} → 📍 Raf barkodunu okutun`;
+    $('#last').style.color = 'orange';
+    $('#last').style.fontWeight = 'bold';
+    
+    return;
+  }
+  
+  // Normal tarama modu
   const r = await fetch('/api/picks/'+pickId+'/scan', {
     method: 'POST',
     headers: {'Content-Type':'application/json'},
@@ -334,6 +505,115 @@ async function submitBarcode(code){
   }
 }
 
+// Lokasyon teyit fonksiyonu
+async function handleLocationScan(shelfCode) {
+  console.log('📍 Location scan:', shelfCode, 'for package:', pendingPackageBarcode);
+  
+  try {
+    // Lokasyon teyit API'sini çağır
+    const response = await fetch(`/api/picks/${pickId}/verify-location`, {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ 
+        packageBarcode: pendingPackageBarcode,
+        shelfCode: shelfCode
+      })
+    });
+    
+    const result = await response.json();
+    console.log('📍 Location verification result:', result);
+    
+    if (response.ok && result.success) {
+      // Teyit sonucunu göster
+      if (result.isCorrectLocation) {
+        // Doğru lokasyon
+        $('#last').textContent = `✅ ${result.message}`;
+        $('#last').style.color = '#22c55e';
+        
+        // Başarılı teyit sonrası normal taramaya geç
+        await processVerifiedScan(pendingPackageBarcode, shelfCode);
+      } else {
+        // Yanlış lokasyon
+        $('#last').textContent = `⚠️ ${result.message}`;
+        $('#last').style.color = '#f59e0b';
+        
+        // Alternatif seçenekler sun
+        if (confirm(`Yanlış lokasyon!\n\nBeklenen: ${result.expectedLocation.shelf_code}\nTaranan: ${shelfCode}\n\nYine de devam etmek istiyor musunuz?`)) {
+          await processVerifiedScan(pendingPackageBarcode, shelfCode, false);
+        } else {
+          resetLocationVerification();
+          return;
+        }
+      }
+    } else {
+      throw new Error(result.error || 'Lokasyon teyit hatası');
+    }
+    
+  } catch (error) {
+    console.error('Location verification error:', error);
+    alert('Lokasyon teyidi başarısız: ' + error.message);
+    resetLocationVerification();
+  }
+}
+
+// Teyit edilmiş taramayı işle
+async function processVerifiedScan(packageBarcode, shelfCode, isCorrectLocation = true) {
+  try {
+    const r = await fetch('/api/picks/'+pickId+'/scan', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ 
+        barcode: packageBarcode,
+        verifiedLocation: {
+          shelfCode: shelfCode,
+          isCorrectLocation: isCorrectLocation
+        }
+      })
+    });
+    const res = await r.json();
+    
+    console.log('📡 Verified scan response:', res);
+    
+    if(res.success){
+      document.getElementById('beepOk').play().catch(()=>{});
+      
+      console.log('🔄 Reloading pick data after successful verified scan...');
+      await loadPick();
+      
+      // Eğer package details açıksa otomatik yenile
+      if(currentlyViewedItemId) {
+        showPackageDetails(currentlyViewedItemId);
+      }
+      
+      if(res.order_completed){
+        showOrderCompletedModal();
+      }
+    } else {
+      document.getElementById('beepErr').play().catch(()=>{});
+      alert(res.error || 'Hata');
+    }
+    
+  } catch (error) {
+    console.error('Verified scan error:', error);
+    alert('Tarama hatası: ' + error.message);
+  } finally {
+    resetLocationVerification();
+  }
+}
+
+// Lokasyon teyit durumunu sıfırla
+function resetLocationVerification() {
+  isWaitingForLocationScan = false;
+  pendingPackageBarcode = null;
+  
+  // Input'u eski haline getir
+  $('#manual').placeholder = 'Ürün Barkodunu Okutun';
+  $('#manual').style.background = '';
+  $('#manual').style.border = '';
+  $('#last').style.color = '';
+  $('#last').style.fontWeight = '';
+}
+
 $('#enter').addEventListener('click', ()=>{
   const v = $('#manual').value.trim();
   if(v) {
@@ -353,52 +633,7 @@ $('#manual').addEventListener('keypress', (e)=>{
   }
 });
 
-// File input handler for barcode images
-$('#barcodeFile').addEventListener('change', async (e) => {
-  const file = e.target.files[0];
-  if (!file) return;
-  
-  console.log('📷 Processing barcode image...');
-  
-  try {
-    // ZXing ile resimden barcode okuma
-    if (typeof ZXing !== 'undefined') {
-      const codeReader = new ZXing.BrowserMultiFormatReader();
-      const result = await codeReader.decodeFromImageElement(await createImageElement(file));
-      
-      if (result) {
-        const code = result.getText();
-        console.log('📸 Barcode read from image:', code);
-        submitBarcode(code);
-      } else {
-        alert('Resimde barkod bulunamadı. Lütfen daha net bir resim deneyin.');
-      }
-    } else {
-      alert('Resim tarama özelliği şu anda kullanılamıyor.');
-    }
-  } catch (error) {
-    console.error('Image barcode reading failed:', error);
-    alert('Resimden barkod okunamadı: ' + error.message);
-  }
-  
-  // File input'u temizle
-  e.target.value = '';
-});
 
-// Helper function to create image element from file
-function createImageElement(file) {
-  return new Promise((resolve) => {
-    const img = new Image();
-    const url = URL.createObjectURL(file);
-    
-    img.onload = () => {
-      URL.revokeObjectURL(url);
-      resolve(img);
-    };
-    
-    img.src = url;
-  });
-}
 
 // Auto-submit for barcode scanners (Zebra terminals)
 let autoSubmitTimer = null;
@@ -422,194 +657,6 @@ $('#manual').addEventListener('input', (e) => {
   }
 });
 
-// Modern HTML5 Camera Scanner with legacy support
-const video = document.getElementById('preview');
-let currentStream = null;
-let isScanning = false;
-let cameraMode = false; // Kamera modu aktif mi?
-
-// getUserMedia polyfill for older browsers
-function getUserMedia(constraints) {
-  // Modern browsers
-  if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
-    return navigator.mediaDevices.getUserMedia(constraints);
-  }
-  
-  // Legacy browsers
-  const getUserMediaLegacy = navigator.getUserMedia || 
-                            navigator.webkitGetUserMedia || 
-                            navigator.mozGetUserMedia || 
-                            navigator.msGetUserMedia;
-  
-  if (!getUserMediaLegacy) {
-    return Promise.reject(new Error('getUserMedia is not supported in this browser'));
-  }
-  
-  return new Promise((resolve, reject) => {
-    getUserMediaLegacy.call(navigator, constraints, resolve, reject);
-  });
-}
-
-async function startScanner(){
-  console.log('🎥 Starting camera scanner...');
-  
-  // Sadece kamera modu aktifse çalıştır
-  if (!cameraMode) {
-    console.log('📱 Camera mode is off, skipping camera initialization');
-    return;
-  }
-  
-  try{
-    // Browser ve API desteği kontrolü
-    console.log('🔍 Checking browser support...');
-    console.log('navigator.mediaDevices:', typeof navigator.mediaDevices);
-    console.log('navigator.getUserMedia:', typeof navigator.getUserMedia);
-    console.log('HTTPS:', location.protocol === 'https:');
-    
-    // Önce mevcut stream'i temizle
-    if (currentStream) {
-      currentStream.getTracks().forEach(track => track.stop());
-    }
-    
-    // HTTPS kontrolü
-    if (location.protocol !== 'https:' && location.hostname !== 'localhost' && location.hostname !== '127.0.0.1') {
-      throw new Error('Kamera erişimi için HTTPS gerekli (localhost hariç)');
-    }
-    
-    // Kamera erişim izni ve stream başlat
-    const constraints = {
-      video: {
-        facingMode: { ideal: 'environment' }, // Arka kamera tercih et
-        width: { ideal: 640 },  // Daha düşük çözünürlük için uyumluluk
-        height: { ideal: 480 }
-      }
-    };
-    
-    console.log('📱 Requesting camera access...');
-    currentStream = await getUserMedia(constraints);
-    
-    // Video elementine stream'i ata
-    video.srcObject = currentStream;
-    video.setAttribute('playsinline', true); // iOS için gerekli
-    video.setAttribute('muted', true);
-    
-    // Video başlatılmasını bekle
-    await new Promise((resolve) => {
-      video.onloadedmetadata = () => {
-        console.log('✅ Camera metadata loaded');
-        video.play().then(() => {
-          console.log('✅ Camera started successfully');
-          resolve();
-        }).catch(err => {
-          console.error('❌ Video play error:', err);
-          resolve();
-        });
-      };
-    });
-    
-    // ZXing ile barcode tarama başlat
-    if (typeof ZXing !== 'undefined') {
-      console.log('📚 ZXing library loaded, starting barcode detection...');
-      startBarcodeDetection();
-    } else {
-      console.warn('⚠️ ZXing library not loaded, only camera preview available');
-      video.style.border = '3px solid orange';
-      // Fallback: Manuel input'a focus
-      setTimeout(() => $('#manual').focus(), 1000);
-    }
-    
-  } catch(error) {
-    console.error('❌ Camera initialization failed:', error);
-    
-    let errorMessage = 'Kamera başlatılamadı';
-    let showFallback = false;
-    
-    if (error.name === 'NotAllowedError') {
-      errorMessage = 'Kamera izni reddedildi. Lütfen tarayıcı ayarlarından kamera erişimine izin verin.';
-    } else if (error.name === 'NotFoundError') {
-      errorMessage = 'Kamera bulunamadı. Lütfen cihazınızda kamera bulunduğundan emin olun.';
-    } else if (error.name === 'NotSupportedError') {
-      errorMessage = 'Tarayıcınız kamera erişimini desteklemiyor.';
-    } else if (error.message.includes('getUserMedia is not supported')) {
-      errorMessage = 'Bu tarayıcı kamera erişimini desteklemiyor. Lütfen güncel bir tarayıcı kullanın.';
-      showFallback = true;
-    } else if (error.message.includes('HTTPS gerekli')) {
-      errorMessage = 'Kamera erişimi için güvenli bağlantı (HTTPS) gerekli.';
-      showFallback = true;
-    } else {
-      errorMessage = `Kamera hatası: ${error.message}`;
-      showFallback = true;
-    }
-    
-    video.style.display = 'none';
-    
-    // Hata mesajı göster
-    const errorDiv = document.createElement('div');
-    errorDiv.style.cssText = 'background:#ff4444;color:white;padding:20px;border-radius:8px;text-align:center;margin:10px 0;';
-    errorDiv.innerHTML = `
-      <div style="font-size:24px;margin-bottom:10px;">📷</div>
-      <div>${errorMessage}</div>
-      <div style="margin-top:10px;font-size:14px;">Manuel barkod girişini kullanabilirsiniz.</div>
-      ${showFallback ? '<div style="margin-top:8px;font-size:12px;color:#ffcccb;">Tarayıcı: ' + navigator.userAgent.split(' ')[0] + '</div>' : ''}
-    `;
-    
-    video.parentElement.insertBefore(errorDiv, video);
-    
-    // Manuel input'a focus
-    setTimeout(() => $('#manual').focus(), 500);
-    
-    // Input alanını vurgula
-    const manualInput = $('#manual');
-    if (manualInput) {
-      manualInput.style.border = '3px solid #ffd700';
-      manualInput.style.boxShadow = '0 0 10px rgba(255, 215, 0, 0.5)';
-      manualInput.placeholder = 'Kamera çalışmıyor - Barkodu buraya yazın';
-    }
-  }
-}
-
-function startBarcodeDetection() {
-  if (isScanning) return;
-  
-  try {
-    const codeReader = new ZXing.BrowserMultiFormatReader();
-    isScanning = true;
-    
-    console.log('🔍 Starting barcode detection...');
-    
-    codeReader.decodeFromVideoDevice(undefined, video, (result, error) => {
-      if (result) {
-        const code = result.getText();
-        console.log('📱 Barcode detected:', code);
-        
-        // Görsel feedback
-        video.style.border = '5px solid #22c55e';
-        setTimeout(() => {
-          video.style.border = '1px solid #ccc';
-        }, 500);
-        
-        // Barkodu işle
-        submitBarcode(code);
-        
-        // Kısa süre taramayı duraklat
-        isScanning = false;
-        setTimeout(() => {
-          if (currentStream && currentStream.active) {
-            startBarcodeDetection();
-          }
-        }, 1000);
-      }
-      
-      if (error && error.name !== 'NotFoundException') {
-        console.warn('Barcode detection error:', error);
-      }
-    });
-    
-  } catch (error) {
-    console.error('Barcode detection failed:', error);
-    isScanning = false;
-  }
-}
 
 // Paket detaylarını göster
 function showPackageDetails(itemId) {
@@ -639,17 +686,32 @@ function showPackageDetails(itemId) {
           const isComplete = scannedCount >= requiredCount;
           const progress = requiredCount > 0 ? Math.round((scannedCount / requiredCount) * 100) : 0;
           
+          // Paket lokasyonlarını FIFO sırasıyla göster
+          const locationsHtml = pkg.locations && pkg.locations.length > 0 
+            ? `<div class="package-locations">
+                 <div class="locations-header">📍 Lokasyonlar (FIFO Sırası):</div>
+                 ${pkg.locations.map((loc, index) => `
+                   <div class="location-item ${index === 0 ? 'first-fifo' : ''}">
+                     <span class="shelf-code">${loc.shelf_code}</span>
+                     <span class="shelf-info">${loc.zone}-${loc.aisle}-${loc.level}</span>
+                     <span class="shelf-qty">${loc.quantity} adet</span>
+                     ${index === 0 ? '<span class="fifo-badge">İlk Çıkar</span>' : ''}
+                   </div>
+                 `).join('')}
+               </div>`
+            : `<div class="no-locations">❌ Rafta stok yok</div>`;
+
           return `
             <div class="package-card ${isComplete ? 'completed' : (scannedCount > 0 ? 'partial' : 'pending')}">
               <div class="package-header">
-                <div class="package-name">${pkg.package_name}</div>
+                <div class="package-name">${pkg.package_number ? `Paket No: ${pkg.package_number}` : pkg.package_name}</div>
                 <div class="package-status">${isComplete ? '✅' : (scannedCount > 0 ? '🔄' : '⏳')}</div>
               </div>
               <div class="package-barcode">
                 <code>${pkg.barcode}</code>
-                ${pkg.package_number ? `<small>Paket No: ${pkg.package_number}</small>` : ''}
-                ${pkg.package_content ? `<small>İçerik: ${pkg.package_content}</small>` : ''}
               </div>
+              ${pkg.package_content ? `<div class="package-content"><small>İçerik: ${pkg.package_content}</small></div>` : ''}
+              ${locationsHtml}
               <div class="package-count-info">
                 <div class="count-display">
                   <span class="scanned-count">${scannedCount}</span> 
@@ -690,62 +752,39 @@ window.manualScan = manualScan;
 function checkForScannedItems() {
   console.log('🔍 Checking for scanned items...');
   console.log('🔍 pickData exists:', !!pickData);
-  console.log('🔍 pickData:', pickData);
   
   if (!pickData) {
     console.log('❌ No pickData');
     return false;
   }
   
-  if (!pickData.order) {
-    console.log('❌ No pickData.order');
-    console.log('🔍 pickData keys:', Object.keys(pickData));
-    return false;
+  // En önce scans kontrolü yap - bu en güvenilir yöntem
+  if (pickData.scans && pickData.scans.length > 0) {
+    console.log('✅ Found scans data:', pickData.scans.length, 'scans');
+    return true;
   }
   
-  if (!pickData.order.items) {
-    console.log('❌ No pickData.order.items');
-    console.log('🔍 pickData.order keys:', Object.keys(pickData.order));
+  // pickData.items kontrolü
+  if (pickData.items && pickData.items.length > 0) {
+    console.log('✅ Found pickData.items');
     
-    // Alternatif olarak pickData.items kontrol et
-    if (pickData.items) {
-      console.log('✅ Found pickData.items instead');
-      console.log('🔍 Full pickData.items data:', pickData.items);
-      
-      // Tüm item'ları detaylı incele
-      pickData.items.forEach((item, index) => {
-        console.log(`📦 Item ${index}:`, {
-          id: item.id,
-          sku: item.sku,
-          product_name: item.product_name,
-          quantity: item.quantity,
-          picked_qty: item.picked_qty,
-          allProperties: Object.keys(item)
-        });
-      });
-      
-      const scannedItems = pickData.items.filter(item => item.picked_qty > 0);
-      console.log('📋 Items with picked_qty > 0 (from pickData.items):', scannedItems.length);
-      console.log('📋 All items (from pickData.items):', pickData.items.map(i => ({sku: i.sku, picked_qty: i.picked_qty, quantity: i.quantity})));
-      
-      // Alternatif: scans sayısına göre de kontrol et
-      if (pickData.scans && pickData.scans.length > 0) {
-        console.log('🔍 Found scans data:', pickData.scans);
-        console.log('📊 Number of scans:', pickData.scans.length);
-        return true; // Eğer scan varsa, tarama yapılmış demektir
-      }
-      
-      return scannedItems.length > 0;
+    const scannedItems = pickData.items.filter(item => item.picked_qty > 0);
+    console.log('📋 Items with picked_qty > 0:', scannedItems.length);
+    
+    if (scannedItems.length > 0) {
+      return true;
     }
-    
-    return false;
   }
   
-  const scannedItems = pickData.order.items.filter(item => item.picked_qty > 0);
-  console.log('📋 Items with picked_qty > 0 (from pickData.order.items):', scannedItems.length);
-  console.log('📋 All items (from pickData.order.items):', pickData.order.items.map(i => ({sku: i.sku, picked_qty: i.picked_qty, quantity: i.quantity})));
+  // pickData.order.items kontrolü (fallback)
+  if (pickData.order && pickData.order.items) {
+    const scannedItems = pickData.order.items.filter(item => item.picked_qty > 0);
+    console.log('📋 Order items with picked_qty > 0:', scannedItems.length);
+    return scannedItems.length > 0;
+  }
   
-  return scannedItems.length > 0;
+  console.log('❌ No scanned items detected');
+  return false;
 }
 
 function showExitModal() {
@@ -768,18 +807,18 @@ function showExitModal() {
     left: 0;
     width: 100%;
     height: 100%;
-    background: rgba(0,0,0,0.8);
+    background: rgba(0,0,0,0.9);
     display: flex;
     justify-content: center;
     align-items: center;
-    z-index: 10000;
+    z-index: 99999;
     font-family: inherit;
   `;
   
   const modalContent = document.createElement('div');
   modalContent.style.cssText = `
     background: white;
-    padding: 20px;
+    padding: 30px;
     border-radius: 12px;
     max-width: 500px;
     width: 95%;
@@ -787,7 +826,8 @@ function showExitModal() {
     overflow-y: auto;
     text-align: center;
     color: black;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+    box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+    border: 2px solid #dc3545;
   `;
   
   modalContent.innerHTML = `
@@ -798,53 +838,56 @@ function showExitModal() {
       Ne yapmak istiyorsunuz?
     </p>
     
-    <div style="display: flex; flex-direction: column; gap: 10px;">
+    <div style="display: flex; flex-direction: column; gap: 15px;">
       <button id="cancelOrder" style="
         background: #dc3545;
         color: white;
         border: none;
-        padding: 12px 16px;
+        padding: 15px 20px;
         border-radius: 8px;
         cursor: pointer;
-        font-size: 14px;
+        font-size: 16px;
         font-weight: bold;
-        transition: background 0.2s;
-        min-height: 50px;
+        transition: all 0.2s;
+        min-height: 60px;
         touch-action: manipulation;
+        box-shadow: 0 4px 8px rgba(0,0,0,0.2);
       ">
-        🗑️ Sipariş Toplamayı İptal Et ve Kapat
+        🗑️ Sipariş Toplamayı İptal Et ve Kapat<br><small style="font-size: 12px; opacity: 0.8;">Tüm taramalar silinir ve rafa geri konur</small>
       </button>
       
       <button id="savePartial" style="
         background: #ffc107;
         color: #000;
         border: none;
-        padding: 12px 16px;
+        padding: 15px 20px;
         border-radius: 8px;
         cursor: pointer;
-        font-size: 14px;
+        font-size: 16px;
         font-weight: bold;
-        transition: background 0.2s;
-        min-height: 50px;
+        transition: all 0.2s;
+        min-height: 60px;
         touch-action: manipulation;
+        box-shadow: 0 4px 8px rgba(0,0,0,0.2);
       ">
-        💾 Sonra Devam Et (Kısmi Toplama Kaydet)
+        💾 Sonra Devam Et (Kısmi Toplama Kaydet)<br><small style="font-size: 12px; opacity: 0.8;">Kaldığınız yerden devam edebilirsiniz</small>
       </button>
       
       <button id="continuePicking" style="
         background: #22c55e;
         color: white;
         border: none;
-        padding: 12px 16px;
+        padding: 15px 20px;
         border-radius: 8px;
         cursor: pointer;
-        font-size: 14px;
+        font-size: 16px;
         font-weight: bold;
-        transition: background 0.2s;
-        min-height: 50px;
+        transition: all 0.2s;
+        min-height: 60px;
         touch-action: manipulation;
+        box-shadow: 0 4px 8px rgba(0,0,0,0.2);
       ">
-        ▶️ Toplamaya Devam Et
+        ▶️ Toplamaya Devam Et<br><small style="font-size: 12px; opacity: 0.8;">Bu sayfada kalmaya devam edin</small>
       </button>
     </div>
   `;
@@ -854,20 +897,33 @@ function showExitModal() {
   document.body.appendChild(modal);
   
   console.log('✅ Modal added to DOM, should be visible');
-  console.log('🔍 Modal element:', modal);
-  console.log('🔍 Modal in DOM:', document.getElementById('exitModal'));
   
-  // Button hover effects
-  const buttons = modalContent.querySelectorAll('button');
-  buttons.forEach(btn => {
+  // Modal'a tıklama önle
+  modal.addEventListener('click', (e) => {
+    if (e.target === modal) {
+      // Modal dışına tıklandığında kapatma
+      closeExitModal();
+    }
+  });
+  
+  // Button hover effects ve click handlers
+  const cancelBtn = modal.querySelector('#cancelOrder');
+  const saveBtn = modal.querySelector('#savePartial');
+  const continueBtn = modal.querySelector('#continuePicking');
+  
+  // Hover effects
+  [cancelBtn, saveBtn, continueBtn].forEach(btn => {
+    if (!btn) return;
+    
     btn.addEventListener('mouseenter', () => {
-      const currentBg = btn.style.background;
-      if (currentBg.includes('#dc3545')) btn.style.background = '#c82333';
-      else if (currentBg.includes('#ffc107')) btn.style.background = '#e0a800';
-      else if (currentBg.includes('#22c55e')) btn.style.background = '#16a085';
+      btn.style.transform = 'scale(1.05)';
+      if (btn.id === 'cancelOrder') btn.style.background = '#c82333';
+      else if (btn.id === 'savePartial') btn.style.background = '#e0a800';
+      else if (btn.id === 'continuePicking') btn.style.background = '#16a34a';
     });
     
     btn.addEventListener('mouseleave', () => {
+      btn.style.transform = 'scale(1)';
       if (btn.id === 'cancelOrder') btn.style.background = '#dc3545';
       else if (btn.id === 'savePartial') btn.style.background = '#ffc107';
       else if (btn.id === 'continuePicking') btn.style.background = '#22c55e';
@@ -875,9 +931,9 @@ function showExitModal() {
   });
   
   // Event listeners
-  $('#cancelOrder').addEventListener('click', handleCancelOrder);
-  $('#savePartial').addEventListener('click', handleSavePartial);
-  $('#continuePicking').addEventListener('click', handleContinuePicking);
+  if (cancelBtn) cancelBtn.addEventListener('click', handleCancelOrder);
+  if (saveBtn) saveBtn.addEventListener('click', handleSavePartial);
+  if (continueBtn) continueBtn.addEventListener('click', handleContinuePicking);
   
   return modal;
 }
@@ -1067,104 +1123,89 @@ async function handleExit() {
     // Senaryo 2: Bazı ürünler taratılmış - modal göster
     console.log('⚠️ Scanned items detected! Showing exit modal...');
     
-    // Test olarak modal göstermeyi deneyelim
+    // Try-catch ile modal gösterme
     try {
-      showExitModal();
-      console.log('✅ Exit modal should be visible now');
+      const modal = showExitModal();
+      console.log('✅ Exit modal created and should be visible now');
+      
+      // Modal'ın DOM'da olduğunu kontrol et
+      const modalInDom = document.getElementById('exitModal');
+      if (modalInDom) {
+        console.log('✅ Modal confirmed in DOM');
+      } else {
+        console.error('❌ Modal not found in DOM after creation');
+      }
+      
     } catch (error) {
       console.error('❌ Error showing exit modal:', error);
-      // Fallback: Basit confirm dialog
-      const confirmExit = confirm('Sipariş yarım kaldı. Çıkmak istiyor musunuz?');
+      // Fallback: Simple confirm dialog
+      const confirmExit = confirm('Sipariş toplama yarım kaldı. Ne yapmak istiyorsunuz?\n\n✅ Tamam = Çıkış yap\n❌ İptal = Devam et');
       if (confirmExit) {
-        window.location.href = '/orders.html';
+        // Eğer kullanıcı çıkış seçerse reset API'sini çağır
+        try {
+          const response = await fetch(`/api/picks/${pickId}/reset`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' }
+          });
+          
+          if (response.ok) {
+            console.log('✅ Order picking reset successfully');
+            window.location.href = '/orders.html';
+          } else {
+            console.error('❌ Failed to reset order picking');
+            alert('Sipariş iptal edilirken hata oluştu. Yine de çıkış yapılacak.');
+            window.location.href = '/orders.html';
+          }
+        } catch (resetError) {
+          console.error('❌ Error resetting order:', resetError);
+          window.location.href = '/orders.html';
+        }
       }
     }
   }
 }
 
-// Sayfa kapatılırken kamera stream'ini temizle
+// Sayfa kapatılırken kontrol
 window.addEventListener('beforeunload', (e) => {
-  // Kamera stream'ini temizle
-  if (currentStream) {
-    currentStream.getTracks().forEach(track => track.stop());
-  }
-  
   if (checkForScannedItems() && !document.hidden) {
     e.preventDefault();
     e.returnValue = 'Sipariş henüz tamamlanmadı. Çıkmak istediğinizden emin misiniz?';
   }
 });
 
-// Visibility change'de kamera kontrolü
-document.addEventListener('visibilitychange', () => {
-  if (document.hidden) {
-    // Sayfa gizlendiğinde kamerayı durdur
-    if (currentStream) {
-      currentStream.getTracks().forEach(track => track.stop());
-      isScanning = false;
-    }
-  } else {
-    // Sayfa tekrar görünür olduğunda kamerayı başlat
-    setTimeout(() => {
-      if (!currentStream || !currentStream.active) {
-        startScanner();
-      }
-    }, 1000);
-  }
-});
 
-// Camera toggle functionality
-function toggleCameraMode() {
-  const toggleBtn = $('#cameraToggle');
-  const cameraIcon = $('#cameraIcon');
-  const cameraText = $('#cameraText');
-  const videoElement = $('#preview');
+// Location verification toggle functionality
+function toggleLocationVerification() {
+  const statusDiv = $('#locationVerifyStatus');
+  const icon = $('#locationVerifyIcon');
+  const text = $('#locationVerifyText');
   
-  if (!cameraMode) {
-    // Kamera modunu aç
-    cameraMode = true;
-    
-    // UI güncellemeleri
-    toggleBtn.style.background = '#dc3545';
-    cameraIcon.textContent = '🔴';
-    cameraText.textContent = 'Kamerayı Kapat';
-    videoElement.style.display = 'block';
-    
-    // Kamerayı başlat
-    console.log('📷 Switching to camera mode');
-    startScanner();
-    
+  locationVerificationEnabled = !locationVerificationEnabled;
+  
+  if (locationVerificationEnabled) {
+    // Zorunlu mod
+    statusDiv.style.background = '#dc3545';
+    icon.textContent = '🔒';
+    text.textContent = 'Lokasyon Teyit: ZORUNLU';
   } else {
-    // Kamera modunu kapat
-    cameraMode = false;
-    
-    // Stream'i durdur
-    if (currentStream) {
-      currentStream.getTracks().forEach(track => track.stop());
-      currentStream = null;
-    }
-    isScanning = false;
-    
-    // UI güncellemeleri
-    toggleBtn.style.background = '#007bff';
-    cameraIcon.textContent = '📷';
-    cameraText.textContent = 'Kamera Aç';
-    videoElement.style.display = 'none';
-    videoElement.srcObject = null;
-    
-    // Hata mesajlarını temizle
-    const errorDivs = document.querySelectorAll('[style*="background:#ff4444"]');
-    errorDivs.forEach(div => div.remove());
-    
-    console.log('📱 Switching to manual mode');
-    
-    // Manuel input'a odaklan
-    setTimeout(() => $('#manual').focus(), 200);
+    // Opsiyonel mod
+    statusDiv.style.background = '#6c757d';
+    icon.textContent = '🔓';
+    text.textContent = 'Lokasyon Teyit: OPSİYONEL';
   }
+  
+  // Input placeholder'ını da güncelle
+  if (!isWaitingForLocationScan) {
+    $('#manual').placeholder = locationVerificationEnabled 
+      ? '1. Ürün Barkodunu Okutun (Lokasyon Teyit Zorunlu)'
+      : 'Ürün Barkodunu Okutun';
+  }
+  
+  console.log('🔄 Location verification toggled:', locationVerificationEnabled ? 'MANDATORY' : 'OPTIONAL');
 }
 
-// Camera toggle button event listener
-$('#cameraToggle').addEventListener('click', toggleCameraMode);
+// Location verification toggle button event listener
+$('#locationVerifyStatus').addEventListener('click', toggleLocationVerification);
 
 // Debug button event listener
 $('#debugBtn').addEventListener('click', () => {
@@ -1179,9 +1220,9 @@ $('#debugBtn').addEventListener('click', () => {
 
 await loadPick();
 
-// Başlangıçta kamera kapalı, sadece manuel input aktif
+// Manuel input modu
 $('#manual').focus();
-console.log('📱 Started in manual input mode. Click camera button to enable camera scanning.');
+console.log('📱 Started in manual input mode.');
 
 // Zebra Terminal Optimizasyonları - Sayfa yüklenince çalıştır
 setTimeout(() => {
@@ -1241,9 +1282,6 @@ const isZebraDevice = /Android/.test(navigator.userAgent) &&
 if (isZebraDevice) {
   document.body.classList.add('zebra-optimized');
   console.log('🦓 Zebra device detected - enabling optimizations');
-  
-  // Keep camera visible for barcode scanning
-  console.log('📱 Mobile device - keeping camera visible for scanning');
   
   // Prevent screen dim during operation
   if ('wakeLock' in navigator) {
