@@ -1628,6 +1628,49 @@ app.get('/api/debug/wix-orders-raw', async (req, res) => {
 });
 
 // ---- Orders ----
+// Generate unique order number
+app.get('/api/orders/generate-number', async (req, res) => {
+  try {
+    const today = new Date();
+    const year = today.getFullYear();
+    const month = String(today.getMonth() + 1).padStart(2, '0');
+    const day = String(today.getDate()).padStart(2, '0');
+    
+    // Format: WMS-YYYYMMDD-XXX
+    const datePrefix = `WMS-${year}${month}${day}`;
+    
+    // Get today's order count
+    const todayStart = `${year}-${month}-${day} 00:00:00`;
+    const todayEnd = `${year}-${month}-${day} 23:59:59`;
+    
+    const todayOrderCount = await get(`
+      SELECT COUNT(*) as count 
+      FROM orders 
+      WHERE created_at BETWEEN ? AND ?
+    `, [todayStart, todayEnd]);
+    
+    const nextNumber = (todayOrderCount.count || 0) + 1;
+    const orderNumber = `${datePrefix}-${String(nextNumber).padStart(3, '0')}`;
+    
+    // Double check uniqueness
+    const existing = await get('SELECT id FROM orders WHERE order_number = ?', [orderNumber]);
+    
+    if (existing) {
+      // Fallback to timestamp-based
+      const timestamp = Date.now();
+      res.json({ orderNumber: `WMS-${timestamp}` });
+    } else {
+      res.json({ orderNumber });
+    }
+    
+  } catch (error) {
+    console.error('❌ Order number generation error:', error);
+    // Fallback
+    const timestamp = Date.now();
+    res.json({ orderNumber: `WMS-${timestamp}` });
+  }
+});
+
 app.get('/api/orders', async (req, res) => {
   const rows = await all(`
     SELECT o.*,
@@ -1648,23 +1691,128 @@ app.get('/api/orders', async (req, res) => {
 });
 
 app.post('/api/orders', async (req, res) => {
-  const { order_number, customer_name, items } = req.body;
-  if (!order_number || !items || !items.length) {
-    return res.status(400).json({ error: 'order_number and items are required' });
+  const { 
+    order_number, 
+    customer_name, 
+    customer_phone,
+    customer_email,
+    delivery_address,
+    order_date,
+    notes,
+    items 
+  } = req.body;
+  
+  if (!order_number || !customer_name) {
+    return res.status(400).json({ 
+      error: 'Sipariş numarası ve müşteri adı zorunludur' 
+    });
   }
+  
+  if (!items || !items.length) {
+    return res.status(400).json({ 
+      error: 'Sipariş için en az bir ürün eklemelisiniz' 
+    });
+  }
+  
   try {
-    await run(`INSERT INTO orders (order_number, customer_name, status) VALUES (?,?, 'open')`,
-      [order_number, customer_name || null]);
-    const order = await get('SELECT * FROM orders WHERE order_number=?', [order_number]);
-    for (const it of items) {
-      const prod = await get('SELECT * FROM products WHERE id=?', [it.product_id]);
-      if (!prod) throw new Error('Invalid product_id ' + it.product_id);
-      await run(`INSERT INTO order_items (order_id, product_id, sku, product_name, quantity) VALUES (?,?,?,?,?)`,
-        [order.id, prod.id, prod.sku, prod.name, parseInt(it.quantity || 1,10)]);
+    // Check if order number already exists
+    const existingOrder = await get('SELECT id FROM orders WHERE order_number = ?', [order_number]);
+    if (existingOrder) {
+      return res.status(400).json({ 
+        error: `Sipariş numarası "${order_number}" zaten kullanılıyor` 
+      });
     }
-    res.status(201).json(order);
+    
+    // Create order
+    const result = await run(`
+      INSERT INTO orders (
+        order_number, 
+        customer_name, 
+        customer_phone,
+        customer_email,
+        delivery_address,
+        order_date,
+        notes,
+        status, 
+        created_at
+      ) VALUES (?,?,?,?,?,?,?,'open', CURRENT_TIMESTAMP)
+    `, [
+      order_number, 
+      customer_name,
+      customer_phone || null,
+      customer_email || null,
+      delivery_address || null,
+      order_date || new Date().toISOString().split('T')[0],
+      notes || null
+    ]);
+    
+    const orderId = result.lastID;
+    
+    // Add order items
+    let totalAmount = 0;
+    for (const item of items) {
+      const prod = await get('SELECT * FROM products WHERE id=?', [item.product_id]);
+      if (!prod) {
+        throw new Error(`Geçersiz ürün ID: ${item.product_id}`);
+      }
+      
+      const quantity = parseInt(item.quantity || 1, 10);
+      const unitPrice = parseFloat(item.unit_price || prod.price || 0);
+      const lineTotal = quantity * unitPrice;
+      totalAmount += lineTotal;
+      
+      await run(`
+        INSERT INTO order_items (
+          order_id, 
+          product_id, 
+          sku, 
+          product_name, 
+          quantity,
+          unit_price,
+          line_total
+        ) VALUES (?,?,?,?,?,?,?)
+      `, [
+        orderId, 
+        prod.id, 
+        prod.sku, 
+        item.product_name || prod.name, 
+        quantity,
+        unitPrice,
+        lineTotal
+      ]);
+    }
+    
+    // Update order with total amount
+    await run('UPDATE orders SET total_amount = ? WHERE id = ?', [totalAmount, orderId]);
+    
+    // Get the complete order
+    const order = await get('SELECT * FROM orders WHERE id=?', [orderId]);
+    const orderItems = await all('SELECT * FROM order_items WHERE order_id=?', [orderId]);
+    
+    console.log(`✅ Manuel sipariş oluşturuldu: ${order_number} - ${customer_name} (₺${totalAmount.toFixed(2)})`);
+    
+    res.status(201).json({
+      success: true,
+      message: 'Sipariş başarıyla oluşturuldu',
+      order: {
+        ...order,
+        items: orderItems
+      }
+    });
+    
   } catch (e) {
-    res.status(400).json({ error: e.message });
+    console.error('❌ Manuel sipariş oluşturma hatası:', e);
+    
+    // SQLite unique constraint error
+    if (e.message.includes('UNIQUE constraint failed')) {
+      return res.status(400).json({ 
+        error: 'Bu sipariş numarası zaten kullanılıyor' 
+      });
+    }
+    
+    res.status(500).json({ 
+      error: 'Sipariş oluşturulurken hata: ' + e.message 
+    });
   }
 });
 

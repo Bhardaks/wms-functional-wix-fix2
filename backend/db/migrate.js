@@ -86,6 +86,18 @@ await ensureColumn(db, 'product_packages', 'package_content', 'package_content T
 // add inventory quantity column to products if missing
 await ensureColumn(db, 'products', 'inventory_quantity', 'inventory_quantity INTEGER');
 
+// add manual order fields to orders if missing
+await ensureColumn(db, 'orders', 'customer_phone', 'customer_phone TEXT');
+await ensureColumn(db, 'orders', 'customer_email', 'customer_email TEXT');
+await ensureColumn(db, 'orders', 'delivery_address', 'delivery_address TEXT');
+await ensureColumn(db, 'orders', 'order_date', 'order_date DATE');
+await ensureColumn(db, 'orders', 'notes', 'notes TEXT');
+await ensureColumn(db, 'orders', 'total_amount', 'total_amount REAL DEFAULT 0');
+
+// add unit price and line total to order_items if missing
+await ensureColumn(db, 'order_items', 'unit_price', 'unit_price REAL DEFAULT 0');
+await ensureColumn(db, 'order_items', 'line_total', 'line_total REAL DEFAULT 0');
+
 // add required_quantity column to service_requests if missing
 await ensureColumn(db, 'service_requests', 'required_quantity', 'required_quantity INTEGER DEFAULT 1');
 
