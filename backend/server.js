@@ -11,9 +11,18 @@ const bcrypt = require('bcryptjs');
 const app = express();
 const PORT = process.env.PORT || 5000;
 
+// Database Backup System
+const DatabaseBackup = require('./db/backup');
+const dbBackup = new DatabaseBackup();
+
 // DB
 const DB_PATH = path.join(__dirname, 'db', 'wms.db');
 const db = new sqlite3.Database(DB_PATH);
+
+// Create automatic backup on startup
+dbBackup.autoBackup().catch(err => {
+  console.warn('⚠️ Could not create startup backup:', err.message);
+});
 
 // Middleware
 app.use(cors({
@@ -1367,14 +1376,69 @@ app.get('/api/products', async (req, res) => {
 });
 
 app.post('/api/products', async (req, res) => {
-  const { sku, name, description, main_barcode, price } = req.body;
+  const { sku, name, description, main_barcode, price, color } = req.body;
+  
   try {
-    await run(`INSERT INTO products (sku, name, description, main_barcode, price) VALUES (?,?,?,?,?)`,
-      [sku, name, description || null, main_barcode || null, price || 0]);
-    const prod = await get('SELECT * FROM products WHERE sku=?', [sku]);
-    res.status(201).json(prod);
+    // Validation
+    if (!sku || !name) {
+      return res.status(400).json({ 
+        error: 'SKU ve ürün adı zorunludur' 
+      });
+    }
+    
+    // SKU format validation
+    if (!/^[A-Z0-9\-]{3,}$/i.test(sku)) {
+      return res.status(400).json({ 
+        error: 'SKU en az 3 karakter olmalı ve sadece harf, rakam, tire içermeli' 
+      });
+    }
+    
+    // Check if SKU already exists
+    const existingProduct = await get('SELECT id, sku FROM products WHERE LOWER(sku) = LOWER(?)', [sku]);
+    if (existingProduct) {
+      return res.status(400).json({ 
+        error: `SKU "${sku}" zaten kullanılıyor (ID: ${existingProduct.id})` 
+      });
+    }
+    
+    // Insert new product
+    const result = await run(`
+      INSERT INTO products (sku, name, description, main_barcode, price, color, created_at, updated_at) 
+      VALUES (?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+    `, [
+      sku.toUpperCase().trim(), 
+      name.trim(), 
+      description?.trim() || null, 
+      main_barcode?.trim() || null, 
+      price || 0,
+      color?.trim() || null
+    ]);
+    
+    // Get the newly created product
+    const newProduct = await get('SELECT * FROM products WHERE id = ?', [result.lastID]);
+    
+    console.log(`✅ New product created: ${newProduct.sku} - ${newProduct.name}`);
+    
+    res.status(201).json({
+      success: true,
+      message: 'Ürün başarıyla eklendi',
+      product: newProduct,
+      ...newProduct  // Backward compatibility
+    });
+    
   } catch (e) {
-    res.status(400).json({ error: e.message });
+    console.error('❌ Product creation error:', e);
+    
+    // SQLite unique constraint error
+    if (e.message.includes('UNIQUE constraint failed')) {
+      return res.status(400).json({ 
+        error: 'Bu SKU zaten kullanılıyor' 
+      });
+    }
+    
+    res.status(500).json({ 
+      error: 'Ürün oluşturulurken hata: ' + e.message 
+    });
   }
 });
 
